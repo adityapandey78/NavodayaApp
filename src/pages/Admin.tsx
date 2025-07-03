@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText, Database, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText, Database, AlertCircle, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { testService, networkService } from '../lib/supabase';
@@ -17,21 +17,53 @@ const Admin: React.FC = () => {
   const [tsCode, setTsCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
 
-  // Check connection status
+  // Check connection status with better detection
+  const checkConnectionStatus = async () => {
+    setConnectionStatus('checking');
+    
+    try {
+      if (!navigator.onLine) {
+        setConnectionStatus('disconnected');
+        return;
+      }
+
+      // Test Supabase connection
+      const canConnect = await networkService.checkSupabaseConnection(5000);
+      setConnectionStatus(canConnect ? 'connected' : 'disconnected');
+      
+      if (canConnect) {
+        showInfo('Database connection verified');
+      } else {
+        showWarning('Database connection failed - please check your internet');
+      }
+    } catch (error) {
+      console.error('Connection check failed:', error);
+      setConnectionStatus('disconnected');
+    }
+  };
+
+  // Check connection on mount and when online status changes
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
+      checkConnectionStatus();
       if (isLoggedIn) {
-        showInfo('Back online! Refreshing data...');
-        loadTests();
+        setTimeout(() => loadTests(), 1000); // Give connection time to stabilize
       }
     };
     
     const handleOffline = () => {
       setIsOnline(false);
+      setConnectionStatus('disconnected');
       showWarning('You are now offline. Admin functions require internet connection.');
     };
+
+    // Initial check
+    if (isLoggedIn) {
+      checkConnectionStatus();
+    }
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -46,8 +78,8 @@ const Admin: React.FC = () => {
   const loadTests = async () => {
     if (!isLoggedIn) return;
     
-    if (!isOnline) {
-      showError('Internet connection required for admin functions');
+    if (connectionStatus !== 'connected') {
+      showError('Database connection required for admin functions');
       return;
     }
     
@@ -69,15 +101,11 @@ const Admin: React.FC = () => {
       }));
       
       setTests(formattedTests);
-      showSuccess('Tests loaded from database');
+      showSuccess(`Loaded ${formattedTests.length} tests from database`);
       
     } catch (error: any) {
       console.error('Error loading tests:', error);
-      if (error.message.includes('internet') || error.message.includes('connection')) {
-        showError('Internet connection required for admin functions');
-      } else {
-        showError('Failed to load tests from database');
-      }
+      showError(`Failed to load tests: ${error.message}`);
       setTests([]);
     } finally {
       setLoading(false);
@@ -85,16 +113,24 @@ const Admin: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isLoggedIn && isOnline) {
+    if (isLoggedIn && connectionStatus === 'connected') {
       loadTests();
     }
-  }, [isLoggedIn, isOnline]);
+  }, [isLoggedIn, connectionStatus]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isOnline) {
       showError('Internet connection required for admin login');
+      return;
+    }
+    
+    // Check connection before allowing login
+    await checkConnectionStatus();
+    
+    if (connectionStatus !== 'connected') {
+      showError('Cannot connect to database. Please check your internet connection.');
       return;
     }
     
@@ -116,8 +152,8 @@ const Admin: React.FC = () => {
   };
 
   const toggleTestStatus = async (testId: string) => {
-    if (!isOnline) {
-      showError('Internet connection required for admin functions');
+    if (connectionStatus !== 'connected') {
+      showError('Database connection required for this action');
       return;
     }
 
@@ -136,17 +172,13 @@ const Admin: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error toggling test status:', error);
-      if (error.message.includes('internet') || error.message.includes('connection')) {
-        showError('Internet connection required for this action');
-      } else {
-        showError('Failed to update test status');
-      }
+      showError(`Failed to update test status: ${error.message}`);
     }
   };
 
   const deleteTest = async (testId: string) => {
-    if (!isOnline) {
-      showError('Internet connection required for admin functions');
+    if (connectionStatus !== 'connected') {
+      showError('Database connection required for this action');
       return;
     }
 
@@ -160,17 +192,13 @@ const Admin: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error deleting test:', error);
-      if (error.message.includes('internet') || error.message.includes('connection')) {
-        showError('Internet connection required for this action');
-      } else {
-        showError('Failed to delete test');
-      }
+      showError(`Failed to delete test: ${error.message}`);
     }
   };
 
   const handleTsUpload = async () => {
-    if (!isOnline) {
-      showError('Internet connection required to create tests');
+    if (connectionStatus !== 'connected') {
+      showError('Database connection required to create tests');
       return;
     }
 
@@ -240,11 +268,25 @@ const Admin: React.FC = () => {
 
     } catch (error: any) {
       console.error('Error creating test:', error);
-      if (error.message.includes('internet') || error.message.includes('connection')) {
-        showError('Internet connection required to create tests');
-      } else {
-        showError(`Error creating test: ${error.message}`);
-      }
+      showError(`Error creating test: ${error.message}`);
+    }
+  };
+
+  const getConnectionStatusColor = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'text-green-400';
+      case 'disconnected': return 'text-red-400';
+      case 'checking': return 'text-yellow-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getConnectionStatusText = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'Database Connected';
+      case 'disconnected': return 'Database Disconnected';
+      case 'checking': return 'Checking Connection...';
+      default: return 'Unknown Status';
     }
   };
 
@@ -287,15 +329,22 @@ const Admin: React.FC = () => {
               Enter your credentials to access the admin panel
             </p>
             <div className="flex items-center justify-center space-x-2 mt-3">
-              {isOnline ? (
+              {connectionStatus === 'checking' && (
                 <>
-                  <Wifi size={16} className="text-green-300" />
-                  <span className="text-green-200 text-sm">Online</span>
+                  <RefreshCw size={16} className="text-yellow-300 animate-spin" />
+                  <span className="text-yellow-200 text-sm">Checking connection...</span>
                 </>
-              ) : (
+              )}
+              {connectionStatus === 'connected' && (
                 <>
-                  <WifiOff size={16} className="text-red-300" />
-                  <span className="text-red-200 text-sm">Offline - Admin requires internet</span>
+                  <Database size={16} className="text-green-300" />
+                  <span className="text-green-200 text-sm">Database Ready</span>
+                </>
+              )}
+              {connectionStatus === 'disconnected' && (
+                <>
+                  <AlertCircle size={16} className="text-red-300" />
+                  <span className="text-red-200 text-sm">Connection Failed</span>
                 </>
               )}
             </div>
@@ -312,7 +361,7 @@ const Admin: React.FC = () => {
                 onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
                 required
-                disabled={!isOnline}
+                disabled={connectionStatus !== 'connected'}
               />
             </div>
 
@@ -326,17 +375,27 @@ const Admin: React.FC = () => {
                 onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
                 required
-                disabled={!isOnline}
+                disabled={connectionStatus !== 'connected'}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={!isOnline}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-500 disabled:to-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300"
-            >
-              {isOnline ? 'Login' : 'Internet Required'}
-            </button>
+            <div className="flex space-x-2">
+              <button
+                type="submit"
+                disabled={connectionStatus !== 'connected'}
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-500 disabled:to-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300"
+              >
+                {connectionStatus === 'connected' ? 'Login' : 'Connection Required'}
+              </button>
+              <button
+                type="button"
+                onClick={checkConnectionStatus}
+                className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors"
+                title="Refresh Connection"
+              >
+                <RefreshCw size={20} className={connectionStatus === 'checking' ? 'animate-spin' : ''} />
+              </button>
+            </div>
           </form>
 
           <div className="mt-6 p-4 bg-white/10 rounded-lg">
@@ -361,17 +420,15 @@ const Admin: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              {isOnline ? (
-                <>
-                  <Wifi size={20} className="text-green-400" />
-                  <span className="text-white font-medium">Online</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff size={20} className="text-red-400" />
-                  <span className="text-white font-medium">Offline</span>
-                </>
-              )}
+              <Database size={20} className={getConnectionStatusColor()} />
+              <span className="text-white font-medium">{getConnectionStatusText()}</span>
+              <button
+                onClick={checkConnectionStatus}
+                className="p-1 hover:bg-white/10 rounded"
+                title="Refresh Connection"
+              >
+                <RefreshCw size={16} className={`text-white/60 hover:text-white ${connectionStatus === 'checking' ? 'animate-spin' : ''}`} />
+              </button>
             </div>
             <button
               onClick={handleLogout}
@@ -382,14 +439,19 @@ const Admin: React.FC = () => {
           </div>
         </div>
 
-        {/* Offline Warning */}
-        {!isOnline && (
+        {/* Connection Warning */}
+        {connectionStatus !== 'connected' && (
           <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-4">
             <div className="flex items-center space-x-3">
               <AlertCircle size={24} className="text-red-300" />
               <div>
-                <p className="font-bold text-red-200">No Internet Connection</p>
-                <p className="text-red-300 text-sm">Admin functions require internet connection. Please connect and refresh.</p>
+                <p className="font-bold text-red-200">Database Connection Required</p>
+                <p className="text-red-300 text-sm">
+                  {connectionStatus === 'checking' 
+                    ? 'Checking database connection...' 
+                    : 'Admin functions require a stable database connection. Please check your internet and try refreshing.'
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -402,7 +464,7 @@ const Admin: React.FC = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => setShowTsUpload(true)}
-                disabled={!isOnline}
+                disabled={connectionStatus !== 'connected'}
                 className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
               >
                 <FileText size={20} />
@@ -437,7 +499,7 @@ const Admin: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => toggleTestStatus(test.id)}
-                      disabled={!isOnline}
+                      disabled={connectionStatus !== 'connected'}
                       className={`p-2 rounded-lg transition-colors ${
                         test.isLive 
                           ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30' 
@@ -450,7 +512,7 @@ const Admin: React.FC = () => {
                     
                     <button
                       onClick={() => deleteTest(test.id)}
-                      disabled={!isOnline}
+                      disabled={connectionStatus !== 'connected'}
                       className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
                       title="Delete Test"
                     >
@@ -463,9 +525,9 @@ const Admin: React.FC = () => {
               {tests.length === 0 && !loading && (
                 <div className="text-center py-8">
                   <p className="text-white/80">
-                    {isOnline ? 'No tests found' : 'Connect to internet to load tests'}
+                    {connectionStatus === 'connected' ? 'No tests found' : 'Connect to database to load tests'}
                   </p>
-                  {isOnline && (
+                  {connectionStatus === 'connected' && (
                     <p className="text-white/60 text-sm mt-2">Upload a test to get started</p>
                   )}
                 </div>
@@ -525,11 +587,11 @@ const Admin: React.FC = () => {
                   </button>
                   <button
                     onClick={handleTsUpload}
-                    disabled={!tsCode.trim() || !isOnline}
+                    disabled={!tsCode.trim() || connectionStatus !== 'connected'}
                     className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300"
                   >
                     <Upload size={20} />
-                    <span>{isOnline ? 'Save to Database' : 'Internet Required'}</span>
+                    <span>{connectionStatus === 'connected' ? 'Save to Database' : 'Connection Required'}</span>
                   </button>
                 </div>
               </div>

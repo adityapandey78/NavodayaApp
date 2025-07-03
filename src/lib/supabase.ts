@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Safely get environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Get environment variables with hardcoded fallbacks for production
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://doibiltyhcqvccsnggwl.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvaWJpbHR5aGNxdmNjc25nZ3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1NTYwMzMsImV4cCI6MjA2NzEzMjAzM30.INuR6Q_0AU5B0tjw51s25Jz7jC63GAL5CG0C84sRNDg';
 
-// Only create client if we have valid credentials
+// Initialize Supabase client
 let supabase: any = null;
 let isSupabaseAvailable = false;
 
@@ -13,9 +13,10 @@ try {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
     isSupabaseAvailable = true;
     console.log('✅ Supabase initialized successfully');
+    console.log('🔗 URL:', supabaseUrl);
   } else {
-    console.error('❌ Supabase credentials not found. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
-    throw new Error('Supabase credentials required');
+    console.error('❌ Invalid Supabase credentials');
+    throw new Error('Invalid Supabase configuration');
   }
 } catch (error) {
   console.error('❌ Failed to initialize Supabase:', error);
@@ -108,14 +109,28 @@ const cacheService = {
 const networkService = {
   isOnline: () => navigator.onLine,
   
-  // Check if we can reach Supabase
-  checkSupabaseConnection: async (): Promise<boolean> => {
-    if (!isSupabaseAvailable || !supabase) return false;
+  // Check if we can reach Supabase with timeout
+  checkSupabaseConnection: async (timeoutMs: number = 5000): Promise<boolean> => {
+    if (!isSupabaseAvailable || !supabase) {
+      console.warn('Supabase not available for connection check');
+      return false;
+    }
     
     try {
-      const { error } = await supabase.from('tests').select('count', { count: 'exact', head: true });
-      return !error || error.code === 'PGRST116'; // PGRST116 is "table not found" which is ok
-    } catch (error) {
+      // Create a promise that rejects after timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Connection timeout')), timeoutMs);
+      });
+
+      // Simple query to test connection
+      const connectionPromise = supabase.from('tests').select('count', { count: 'exact', head: true });
+      
+      await Promise.race([connectionPromise, timeoutPromise]);
+      
+      console.log('✅ Supabase connection verified');
+      return true;
+    } catch (error: any) {
+      console.warn('❌ Supabase connection check failed:', error.message);
       return false;
     }
   }
@@ -126,15 +141,21 @@ export const testService = {
   // Check if Supabase is available
   isAvailable: () => isSupabaseAvailable && supabase,
 
-  // Check network and Supabase connection
-  checkConnection: async (): Promise<boolean> => {
-    if (!networkService.isOnline()) {
-      throw new Error('No internet connection. Please connect to the internet to continue.');
+  // Check network and Supabase connection with better error handling
+  checkConnection: async (skipNetworkCheck: boolean = false): Promise<boolean> => {
+    // For admin functions, we need both network and Supabase
+    if (!skipNetworkCheck && !networkService.isOnline()) {
+      throw new Error('No internet connection detected. Please check your network settings.');
     }
     
-    const canReachSupabase = await networkService.checkSupabaseConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database connection not available. Please check your configuration.');
+    }
+
+    // Quick connection test with timeout
+    const canReachSupabase = await networkService.checkSupabaseConnection(5000);
     if (!canReachSupabase) {
-      throw new Error('Cannot connect to database. Please check your internet connection.');
+      throw new Error('Cannot reach database server. Please check your internet connection.');
     }
     
     return true;
@@ -153,6 +174,7 @@ export const testService = {
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error('Supabase query error:', error);
         throw error;
       }
 
@@ -170,12 +192,15 @@ export const testService = {
 
       // Cache the tests for offline quiz-taking
       cacheService.cacheTests(formattedTests);
+      console.log(`✅ Loaded ${formattedTests.length} tests from database`);
       
       return formattedTests;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error fetching tests from Supabase:', error);
+      
       // If online but can't reach Supabase, throw error
       if (networkService.isOnline()) {
-        throw error;
+        throw new Error(`Database connection failed: ${error.message}`);
       }
       
       // If offline, try to use cached data for quiz-taking only
@@ -202,6 +227,7 @@ export const testService = {
         .single();
 
       if (error) {
+        console.error('Supabase query error:', error);
         throw error;
       }
 
@@ -216,7 +242,9 @@ export const testService = {
         isLive: data.is_live,
         sections: data.sections
       };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error fetching test by ID:', error);
+      
       // If offline, try cached data
       if (!networkService.isOnline()) {
         const cachedTests = cacheService.getCachedTests();
@@ -241,7 +269,8 @@ export const testService = {
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw error;
+      console.error('Supabase query error:', error);
+      throw new Error(`Failed to fetch tests: ${error.message}`);
     }
 
     return data || [];
@@ -266,7 +295,8 @@ export const testService = {
       .single();
 
     if (error) {
-      throw error;
+      console.error('Supabase insert error:', error);
+      throw new Error(`Failed to create test: ${error.message}`);
     }
 
     // Clear cache to force refresh
@@ -295,7 +325,8 @@ export const testService = {
       .single();
 
     if (error) {
-      throw error;
+      console.error('Supabase update error:', error);
+      throw new Error(`Failed to update test: ${error.message}`);
     }
 
     // Clear cache to force refresh
@@ -313,7 +344,8 @@ export const testService = {
       .eq('id', id);
 
     if (error) {
-      throw error;
+      console.error('Supabase update error:', error);
+      throw new Error(`Failed to toggle test status: ${error.message}`);
     }
 
     // Clear cache to force refresh
@@ -331,7 +363,8 @@ export const testService = {
       .eq('id', id);
 
     if (error) {
-      throw error;
+      console.error('Supabase delete error:', error);
+      throw new Error(`Failed to delete test: ${error.message}`);
     }
 
     // Clear cache to force refresh
@@ -381,9 +414,9 @@ export const attemptService = {
       }
       
       this.clearPendingAttempts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to sync pending attempts:', error);
-      throw error;
+      throw new Error(`Failed to sync pending attempts: ${error.message}`);
     }
   },
 
@@ -398,7 +431,8 @@ export const attemptService = {
       .order('completed_at', { ascending: false });
 
     if (error) {
-      throw error;
+      console.error('Supabase query error:', error);
+      throw new Error(`Failed to fetch attempts: ${error.message}`);
     }
 
     return (data || []).map((attempt: DatabaseTestAttempt) => ({
@@ -437,7 +471,8 @@ export const attemptService = {
       .single();
 
     if (error) {
-      throw error;
+      console.error('Supabase insert error:', error);
+      throw new Error(`Failed to save attempt: ${error.message}`);
     }
 
     return data;
