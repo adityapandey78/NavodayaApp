@@ -25,16 +25,3 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-# Environment variables for all contexts
-[context.production.environment]
-  VITE_SUPABASE_URL = "https://ree7xjrvqhqjqhqjqhqj.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlZTd4anJ2cWhxanFocWpxaHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5MDU3MzgsImV4cCI6MjA1MTQ4MTczOH0.Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6"
-
-[context.deploy-preview.environment]
-  VITE_SUPABASE_URL = "https://ree7xjrvqhqjqhqjqhqj.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlZTd4anJ2cWhxanFocWpxaHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5MDU3MzgsImV4cCI6MjA1MTQ4MTczOH0.Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6"
-
-[context.branch-deploy.environment]
-  VITE_SUPABASE_URL = "https://ree7xjrvqhqjqhqjqhqj.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlZTd4anJ2cWhxanFocWpxaHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5MDU3MzgsImV4cCI6MjA1MTQ4MTczOH0.Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6"
