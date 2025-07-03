@@ -18,7 +18,7 @@ const QuizSelection: React.FC = () => {
       
       let tests: any[] = [];
       
-      // Try to load from Supabase first
+      // Always try Supabase first for live tests
       try {
         const supabaseTests = await testService.getLiveTests();
         

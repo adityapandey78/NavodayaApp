@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flag, Globe } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
 import { useAuth } from '../contexts/AuthContext';
 import { testService } from '../lib/supabase';
@@ -27,6 +27,7 @@ const Quiz: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showHindi, setShowHindi] = useState(false);
 
   // Memoize the current question to prevent unnecessary re-renders
   const currentQuestion = useMemo(() => {
@@ -218,6 +219,7 @@ const Quiz: React.FC = () => {
   }
 
   const answeredQuestions = userAnswers.length;
+  const hasHindiContent = currentQuestion.questionHi && currentQuestion.questionHi !== currentQuestion.question;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600">
@@ -228,6 +230,19 @@ const Quiz: React.FC = () => {
             <h1 className="text-xl font-bold text-white">
               {test.testName}
             </h1>
+            {hasHindiContent && (
+              <button
+                onClick={() => setShowHindi(!showHindi)}
+                className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  showHindi 
+                    ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
+                    : 'bg-white/10 text-white/80 border border-white/20'
+                }`}
+              >
+                <Globe size={16} />
+                <span>{showHindi ? 'हिंदी' : 'Hindi'}</span>
+              </button>
+            )}
           </div>
           <Timer duration={test.durationInMinutes} onTimeUp={handleTimeUp} />
         </div>
@@ -249,13 +264,15 @@ const Quiz: React.FC = () => {
               {currentQuestion.sectionName}
             </span>
             <p className="text-xl font-medium text-white leading-relaxed">
-              {currentQuestion.questionHi || currentQuestion.question}
+              {showHindi && currentQuestion.questionHi 
+                ? currentQuestion.questionHi 
+                : currentQuestion.question}
             </p>
           </div>
 
           <div className="space-y-4">
             {currentQuestion.options.map((option: string, index: number) => {
-              const optionText = currentQuestion.optionsHi 
+              const optionText = showHindi && currentQuestion.optionsHi 
                 ? currentQuestion.optionsHi[index] 
                 : option;
               

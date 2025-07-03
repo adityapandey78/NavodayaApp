@@ -15,16 +15,15 @@ const Admin: React.FC = () => {
   const [showTsUpload, setShowTsUpload] = useState(false);
   const [tsCode, setTsCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [useDatabase, setUseDatabase] = useState(true);
 
-  // Load tests from Supabase or localStorage
+  // Always try to use database first, then fallback to localStorage
   useEffect(() => {
     const loadTests = async () => {
       setLoading(true);
       try {
-        if (useDatabase && user) {
-          // Load from Supabase
-          const supabaseTests = await testService.getAllTests();
+        // Always try Supabase first
+        const supabaseTests = await testService.getAllTests();
+        if (supabaseTests.length > 0) {
           const formattedTests = supabaseTests.map(test => ({
             id: test.id,
             testType: test.test_type,
@@ -38,21 +37,31 @@ const Admin: React.FC = () => {
           }));
           setTests(formattedTests);
         } else {
-          // Load from localStorage (fallback)
+          // Fallback to localStorage only if no database tests
           const savedTests = localStorage.getItem('admin-tests');
           if (savedTests) {
             const parsedTests = JSON.parse(savedTests);
             setTests(Array.isArray(parsedTests) ? parsedTests : []);
           } else {
-            // Load default tests
+            // Load default tests and save them to database
             const module = await import('../data/testData');
-            setTests(module.availableTests);
-            localStorage.setItem('admin-tests', JSON.stringify(module.availableTests));
+            const defaultTests = module.availableTests;
+            setTests(defaultTests);
+            
+            // Save default tests to database
+            for (const test of defaultTests) {
+              await testService.createTest(test);
+            }
           }
         }
       } catch (error) {
         console.error('Error loading tests:', error);
-        setTests([]);
+        // Fallback to localStorage on error
+        const savedTests = localStorage.getItem('admin-tests');
+        if (savedTests) {
+          const parsedTests = JSON.parse(savedTests);
+          setTests(Array.isArray(parsedTests) ? parsedTests : []);
+        }
       } finally {
         setLoading(false);
       }
@@ -61,7 +70,7 @@ const Admin: React.FC = () => {
     if (isLoggedIn) {
       loadTests();
     }
-  }, [isLoggedIn, useDatabase, user]);
+  }, [isLoggedIn]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,16 +87,16 @@ const Admin: React.FC = () => {
 
     const newStatus = !test.isLive;
 
-    if (useDatabase && user) {
-      const success = await testService.toggleTestStatus(testId, newStatus);
-      if (success) {
-        setTests(prev => prev.map(t => 
-          t.id === testId ? { ...t, isLive: newStatus } : t
-        ));
-      } else {
-        alert('Failed to update test status in database');
-      }
+    // Always try to update in database first
+    const success = await testService.toggleTestStatus(testId, newStatus);
+    if (success) {
+      setTests(prev => prev.map(t => 
+        t.id === testId ? { ...t, isLive: newStatus } : t
+      ));
+      // Trigger event to update other components
+      window.dispatchEvent(new CustomEvent('testsUpdated'));
     } else {
+      // Fallback to localStorage
       setTests(prev => prev.map(t => 
         t.id === testId ? { ...t, isLive: newStatus } : t
       ));
@@ -100,14 +109,13 @@ const Admin: React.FC = () => {
   const deleteTest = async (testId: string) => {
     if (!confirm('Are you sure you want to delete this test?')) return;
 
-    if (useDatabase && user) {
-      const success = await testService.deleteTest(testId);
-      if (success) {
-        setTests(prev => prev.filter(t => t.id !== testId));
-      } else {
-        alert('Failed to delete test from database');
-      }
+    // Always try to delete from database first
+    const success = await testService.deleteTest(testId);
+    if (success) {
+      setTests(prev => prev.filter(t => t.id !== testId));
+      window.dispatchEvent(new CustomEvent('testsUpdated'));
     } else {
+      // Fallback to localStorage
       setTests(prev => prev.filter(t => t.id !== testId));
       localStorage.setItem('admin-tests', JSON.stringify(tests.filter(t => t.id !== testId)));
     }
@@ -123,11 +131,11 @@ const Admin: React.FC = () => {
 
     const updatedTest = { ...editingTest, totalMarks };
 
-    if (useDatabase && user) {
-      // Save to Supabase
-      let result;
-      const existingTest = tests.find(t => t.id === updatedTest.id);
-      
+    // Always try to save to database first
+    let result;
+    const existingTest = tests.find(t => t.id === updatedTest.id);
+    
+    try {
       if (existingTest) {
         result = await testService.updateTest(updatedTest.id, updatedTest);
       } else {
@@ -159,12 +167,13 @@ const Admin: React.FC = () => {
         });
 
         alert('Test saved to database successfully!');
+        window.dispatchEvent(new CustomEvent('testsUpdated'));
       } else {
-        alert('Failed to save test to database');
-        return;
+        throw new Error('Failed to save to database');
       }
-    } else {
-      // Save to localStorage
+    } catch (error) {
+      console.error('Database save failed:', error);
+      // Fallback to localStorage
       setTests(prev => {
         const existingIndex = prev.findIndex(t => t.id === updatedTest.id);
         if (existingIndex >= 0) {
@@ -176,6 +185,7 @@ const Admin: React.FC = () => {
         }
       });
       localStorage.setItem('admin-tests', JSON.stringify(tests));
+      alert('Test saved locally (database unavailable)');
     }
 
     setShowAddTest(false);
@@ -207,7 +217,7 @@ const Admin: React.FC = () => {
         totalMarks: 0,
         testDate: testData.testDate || new Date().toISOString().split('T')[0],
         durationInMinutes: testData.durationInMinutes,
-        isLive: testData.isLive || false,
+        isLive: testData.isLive !== false, // Default to true
         sections: testData.sections.map((section: any, sectionIndex: number) => ({
           name: section.name,
           nameHi: section.nameHi || section.name,
@@ -227,7 +237,8 @@ const Admin: React.FC = () => {
         total + section.questions.reduce((sectionTotal, question) => sectionTotal + question.marks, 0), 0
       );
 
-      if (useDatabase && user) {
+      // Always try to save to database first
+      try {
         const result = await testService.createTest(newTest);
         if (result) {
           const formattedTest = {
@@ -243,19 +254,20 @@ const Admin: React.FC = () => {
           };
           setTests(prev => [...prev, formattedTest]);
           alert(`Test "${newTest.testName}" created in database with ${newTest.totalMarks} marks!`);
+          window.dispatchEvent(new CustomEvent('testsUpdated'));
         } else {
-          alert('Failed to save test to database');
-          return;
+          throw new Error('Failed to save to database');
         }
-      } else {
+      } catch (error) {
+        console.error('Database save failed:', error);
+        // Fallback to localStorage
         setTests(prev => [...prev, newTest]);
         localStorage.setItem('admin-tests', JSON.stringify([...tests, newTest]));
-        alert(`Test "${newTest.testName}" created locally with ${newTest.totalMarks} marks!`);
+        alert(`Test "${newTest.testName}" created locally with ${newTest.totalMarks} marks! (Database unavailable)`);
       }
 
       setTsCode('');
       setShowTsUpload(false);
-      window.dispatchEvent(new CustomEvent('testsUpdated'));
 
     } catch (error) {
       alert(`Error parsing test data: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -290,21 +302,6 @@ const Admin: React.FC = () => {
           options: ["IFMQ", "GFKO", "HMQK", "IEMQ"],
           optionsHi: ["IFMQ", "GFKO", "HMQK", "IEMQ"],
           correctAnswer: "IFMQ",
-          marks: 2
-        }
-      ]
-    },
-    {
-      name: "Arithmetic",
-      nameHi: "अंकगणित",
-      questions: [
-        {
-          id: "q3",
-          question: "What is 15% of 200?",
-          questionHi: "200 का 15% क्या है?",
-          options: ["25", "30", "35", "40"],
-          optionsHi: ["25", "30", "35", "40"],
-          correctAnswer: "30",
           marks: 2
         }
       ]
@@ -382,21 +379,10 @@ const Admin: React.FC = () => {
             <p className="text-white/80">Manage tests and configurations</p>
           </div>
           <div className="flex items-center space-x-4">
-            {user && (
-              <div className="flex items-center space-x-2">
-                <Database size={20} className="text-white" />
-                <button
-                  onClick={() => setUseDatabase(!useDatabase)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    useDatabase 
-                      ? 'bg-green-500 hover:bg-green-600 text-white' 
-                      : 'bg-white/20 hover:bg-white/30 text-white'
-                  }`}
-                >
-                  {useDatabase ? 'Database Mode' : 'Local Mode'}
-                </button>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              <Database size={20} className="text-green-400" />
+              <span className="text-white font-medium">Database Mode</span>
+            </div>
             <button
               onClick={() => setIsLoggedIn(false)}
               className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
@@ -416,7 +402,7 @@ const Admin: React.FC = () => {
                 className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
               >
                 <FileText size={20} />
-                <span>Upload TS Code</span>
+                <span>Upload Test</span>
               </button>
             </div>
           </div>
@@ -476,7 +462,7 @@ const Admin: React.FC = () => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Upload Test from TypeScript Code</h2>
+                <h2 className="text-xl font-bold text-white">Upload Test to Database</h2>
                 <button
                   onClick={() => {
                     setShowTsUpload(false);
@@ -491,7 +477,7 @@ const Admin: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white/80 mb-2">
-                    Paste your TypeScript test data here:
+                    Paste your test data here (will be saved to database):
                   </label>
                   <textarea
                     value={tsCode}
@@ -524,7 +510,7 @@ const Admin: React.FC = () => {
                     className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300"
                   >
                     <Upload size={20} />
-                    <span>Create Test</span>
+                    <span>Save to Database</span>
                   </button>
                 </div>
               </div>
