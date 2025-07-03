@@ -6,7 +6,7 @@ import { useQuiz } from '../contexts/QuizContext';
 const Results: React.FC = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string }>();
   const navigate = useNavigate();
-  const { userAnswers, addTestAttempt, language, currentAttemptId } = useQuiz();
+  const { userAnswers, addTestAttempt, currentAttemptId } = useQuiz();
   const [results, setResults] = useState<any>(null);
   const [test, setTest] = useState<any>(null);
   const [attemptSaved, setAttemptSaved] = useState(false);
@@ -123,17 +123,10 @@ const Results: React.FC = () => {
   };
 
   const getPerformanceMessage = (percentage: number) => {
-    if (language === 'hi') {
-      if (percentage >= 80) return 'बहुत बेहतरीन! 🎉';
-      if (percentage >= 60) return 'अच्छा प्रदर्शन! 👍';
-      if (percentage >= 40) return 'बेहतर कर सकते हैं! 💪';
-      return 'और मेहनत की जरूरत है! 📚';
-    } else {
-      if (percentage >= 80) return 'Excellent Performance! 🎉';
-      if (percentage >= 60) return 'Good Job! 👍';
-      if (percentage >= 40) return 'Keep Improving! 💪';
-      return 'Need More Practice! 📚';
-    }
+    if (percentage >= 80) return 'Excellent Performance! 🎉';
+    if (percentage >= 60) return 'Good Job! 👍';
+    if (percentage >= 40) return 'Keep Improving! 💪';
+    return 'Need More Practice! 📚';
   };
 
   if (!results || !test) {
@@ -155,12 +148,8 @@ const Results: React.FC = () => {
           <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
             <Trophy size={48} className="text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-4">
-            {language === 'hi' ? 'परिणाम' : 'Test Results'}
-          </h1>
-          <p className="text-white/80 text-lg">
-            {test && (language === 'hi' && test.testNameHi ? test.testNameHi : test?.testName)}
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-4">Test Results</h1>
+          <p className="text-white/80 text-lg">{test?.testName}</p>
         </div>
 
         {/* Score Card */}
@@ -173,9 +162,7 @@ const Results: React.FC = () => {
               {getPerformanceMessage(results.percentage)}
             </p>
             <p className="text-white/80 text-lg">
-              {language === 'hi' 
-                ? `${results.totalScore} / ${results.totalMarks} अंक`
-                : `${results.totalScore} / ${results.totalMarks} marks`}
+              {results.totalScore} / {results.totalMarks} marks
             </p>
           </div>
 
@@ -184,34 +171,26 @@ const Results: React.FC = () => {
               <div className="text-3xl font-bold text-white">
                 {results.correct}
               </div>
-              <p className="text-white/90 font-medium">
-                {language === 'hi' ? 'सही' : 'Correct'}
-              </p>
+              <p className="text-white/90 font-medium">Correct</p>
             </div>
             <div className="text-center p-6 bg-gradient-to-br from-red-400 to-pink-500 rounded-2xl">
               <div className="text-3xl font-bold text-white">
                 {results.incorrect}
               </div>
-              <p className="text-white/90 font-medium">
-                {language === 'hi' ? 'गलत' : 'Incorrect'}
-              </p>
+              <p className="text-white/90 font-medium">Incorrect</p>
             </div>
             <div className="text-center p-6 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl">
               <div className="text-3xl font-bold text-white">
                 {results.unanswered}
               </div>
-              <p className="text-white/90 font-medium">
-                {language === 'hi' ? 'अनुत्तरित' : 'Unanswered'}
-              </p>
+              <p className="text-white/90 font-medium">Unanswered</p>
             </div>
           </div>
         </div>
 
         {/* Section-wise Performance */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-          <h2 className="text-xl font-bold text-white mb-6">
-            {language === 'hi' ? 'विषयवार प्रदर्शन' : 'Section-wise Performance'}
-          </h2>
+          <h2 className="text-xl font-bold text-white mb-6">Section-wise Performance</h2>
           <div className="space-y-4">
             {Object.entries(results.sectionWiseScore).map(([sectionName, scores]: [string, any]) => {
               const percentage = Math.round((scores.score / scores.total) * 100);
@@ -241,14 +220,14 @@ const Results: React.FC = () => {
             className="flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
             <Home size={24} />
-            <span className="text-lg">{language === 'hi' ? 'होम जाएं' : 'Go Home'}</span>
+            <span className="text-lg">Go Home</span>
           </button>
           <button
             onClick={() => navigate('/quiz-selection')}
             className="flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-500 to-pink-400 hover:from-purple-600 hover:to-pink-500 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
             <RotateCcw size={24} />
-            <span className="text-lg">{language === 'hi' ? 'दुबारा करें' : 'Take Another'}</span>
+            <span className="text-lg">Take Another</span>
           </button>
         </div>
       </div>

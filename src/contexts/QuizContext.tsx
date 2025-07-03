@@ -13,8 +13,6 @@ interface QuizContextType {
   addTestAttempt: (attempt: TestAttempt) => void;
   currentAttemptId: string | null;
   setCurrentAttemptId: (id: string | null) => void;
-  language: 'en' | 'hi';
-  setLanguage: (lang: 'en' | 'hi') => void;
   clearUserAnswers: () => void;
   loadUserAttempts: () => Promise<void>;
 }
@@ -35,12 +33,11 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
-  const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [isLoading, setIsLoading] = useState(false);
 
   // Load user attempts from Supabase or localStorage
   const loadUserAttempts = async () => {
-    if (isLoading) return; // Prevent multiple simultaneous loads
+    if (isLoading) return;
     
     setIsLoading(true);
     try {
@@ -62,11 +59,9 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTestAttempts(formattedAttempts);
         } catch (error) {
           console.error('Error loading user attempts from Supabase:', error);
-          // Fallback to localStorage
           loadLocalAttempts();
         }
       } else {
-        // Load from localStorage for guest users
         loadLocalAttempts();
       }
     } finally {
@@ -92,17 +87,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Load attempts only once when user changes
   useEffect(() => {
     loadUserAttempts();
-
-    const savedLanguage = localStorage.getItem('prep-with-satyam-language');
-    if (savedLanguage) {
-      setLanguage(savedLanguage as 'en' | 'hi');
-    }
-  }, [user?.id]); // Only depend on user ID to prevent infinite loops
-
-  // Save language preference
-  useEffect(() => {
-    localStorage.setItem('prep-with-satyam-language', language);
-  }, [language]);
+  }, [user?.id]);
 
   // Save attempts to localStorage for guest users (debounced)
   useEffect(() => {
@@ -127,7 +112,6 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addTestAttempt = async (attempt: TestAttempt) => {
     if (user) {
       try {
-        // Save to Supabase
         const savedAttempt = await attemptService.saveAttempt({
           testId: attempt.testId,
           testType: attempt.testType,
@@ -167,11 +151,9 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('Error saving attempt to Supabase:', error);
-        // Fallback to localStorage
         addLocalAttempt(attempt);
       }
     } else {
-      // Save to localStorage for guest users
       addLocalAttempt(attempt);
     }
   };
@@ -204,8 +186,6 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addTestAttempt,
       currentAttemptId,
       setCurrentAttemptId,
-      language,
-      setLanguage,
       clearUserAnswers,
       loadUserAttempts
     }}>

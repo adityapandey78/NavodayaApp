@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Shield, Users, Clock } from 'lucide-react';
-import { useQuiz } from '../contexts/QuizContext';
 import { useAuth } from '../contexts/AuthContext';
 import { testService } from '../lib/supabase';
 
 const QuizSelection: React.FC = () => {
   const navigate = useNavigate();
-  const { language } = useQuiz();
   const { user } = useAuth();
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +23,6 @@ const QuizSelection: React.FC = () => {
         const supabaseTests = await testService.getLiveTests();
         
         if (supabaseTests.length > 0) {
-          // Convert Supabase format to app format
           tests = supabaseTests.map(test => ({
             id: test.id,
             testType: test.test_type,
@@ -134,13 +131,9 @@ const QuizSelection: React.FC = () => {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-4">
           <div className="inline-block p-4 bg-white/10 backdrop-blur-lg rounded-2xl">
-            <h1 className="text-3xl font-bold text-white">
-              {language === 'hi' ? 'अपना टेस्ट चुनें' : 'Choose Your Test'}
-            </h1>
+            <h1 className="text-3xl font-bold text-white">Choose Your Test</h1>
             <p className="text-white/80 mt-2">
-              {language === 'hi' 
-                ? 'अपनी तैयारी शुरू करने के लिए नीचे से टेस्ट चुनें' 
-                : 'Select a test below to start your preparation'}
+              Select a test below to start your preparation
             </p>
           </div>
         </div>
@@ -152,9 +145,7 @@ const QuizSelection: React.FC = () => {
               <div className="p-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl">
                 <BookOpen size={28} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white">
-                {language === 'hi' ? 'नवोदय विद्यालय' : 'Navodaya Vidyalaya'}
-              </h2>
+              <h2 className="text-2xl font-bold text-white">Navodaya Vidyalaya</h2>
             </div>
             
             <div className="grid gap-6">
@@ -163,7 +154,7 @@ const QuizSelection: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-white mb-2">
-                        {language === 'hi' && test.testNameHi ? test.testNameHi : test.testName}
+                        {test.testName}
                       </h3>
                       <div className="flex items-center space-x-6 text-white/80 mb-4">
                         <div className="flex items-center space-x-2">
@@ -181,7 +172,7 @@ const QuizSelection: React.FC = () => {
                             key={section.name}
                             className="px-3 py-1 bg-white/20 text-white text-sm rounded-full font-medium"
                           >
-                            {language === 'hi' && section.nameHi ? section.nameHi : section.name}
+                            {section.name}
                           </span>
                         ))}
                       </div>
@@ -190,7 +181,7 @@ const QuizSelection: React.FC = () => {
                       onClick={() => startTest(test.testType, test.id)}
                       className="ml-6 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
                     >
-                      {language === 'hi' ? 'शुरू करें' : 'Start'}
+                      Start
                     </button>
                   </div>
                 </div>
@@ -206,9 +197,7 @@ const QuizSelection: React.FC = () => {
               <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-400 rounded-xl">
                 <Shield size={28} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white">
-                {language === 'hi' ? 'सैनिक स्कूल' : 'Sainik School'}
-              </h2>
+              <h2 className="text-2xl font-bold text-white">Sainik School</h2>
             </div>
             
             <div className="grid gap-6">
@@ -217,7 +206,7 @@ const QuizSelection: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-white mb-2">
-                        {language === 'hi' && test.testNameHi ? test.testNameHi : test.testName}
+                        {test.testName}
                       </h3>
                       <div className="flex items-center space-x-6 text-white/80 mb-4">
                         <div className="flex items-center space-x-2">
@@ -235,7 +224,7 @@ const QuizSelection: React.FC = () => {
                             key={section.name}
                             className="px-3 py-1 bg-white/20 text-white text-sm rounded-full font-medium"
                           >
-                            {language === 'hi' && section.nameHi ? section.nameHi : section.name}
+                            {section.name}
                           </span>
                         ))}
                       </div>
@@ -244,7 +233,7 @@ const QuizSelection: React.FC = () => {
                       onClick={() => startTest(test.testType, test.id)}
                       className="ml-6 bg-gradient-to-r from-purple-500 to-pink-400 hover:from-purple-600 hover:to-pink-500 text-white px-8 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
                     >
-                      {language === 'hi' ? 'शुरू करें' : 'Start'}
+                      Start
                     </button>
                   </div>
                 </div>
@@ -259,13 +248,9 @@ const QuizSelection: React.FC = () => {
               <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <BookOpen size={40} className="text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">
-                {language === 'hi' ? 'कोई टेस्ट उपलब्ध नहीं' : 'No Tests Available'}
-              </h3>
+              <h3 className="text-2xl font-bold text-white mb-4">No Tests Available</h3>
               <p className="text-white/80 text-lg">
-                {language === 'hi' 
-                  ? 'कृपया बाद में फिर से जांचें या व्यवस्थापक से संपर्क करें' 
-                  : 'Please check back later or contact administrator'}
+                Please check back later or contact administrator
               </p>
             </div>
           </div>

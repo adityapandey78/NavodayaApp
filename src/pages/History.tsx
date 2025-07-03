@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useQuiz } from '../contexts/QuizContext';
 
 const History: React.FC = () => {
-  const { testAttempts, language } = useQuiz();
+  const { testAttempts } = useQuiz();
   const navigate = useNavigate();
 
   const chartData = testAttempts.slice(-10).map((attempt, index) => ({
@@ -28,13 +28,9 @@ const History: React.FC = () => {
   return (
     <div className="p-4 space-y-6 max-w-4xl mx-auto">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {language === 'hi' ? 'परीक्षा इतिहास' : 'Test History'}
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Test History</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          {language === 'hi' 
-            ? 'अपने प्रदर्शन को ट्रैक करें' 
-            : 'Track your performance over time'}
+          Track your performance over time
         </p>
       </div>
 
@@ -44,18 +40,16 @@ const History: React.FC = () => {
             <BookOpen size={32} className="text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            {language === 'hi' ? 'कोई परीक्षा नहीं ली गई' : 'No Tests Taken Yet'}
+            No Tests Taken Yet
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            {language === 'hi' 
-              ? 'अपनी पहली परीक्षा लेकर शुरुआत करें' 
-              : 'Start by taking your first test'}
+            Start by taking your first test
           </p>
           <button
             onClick={() => navigate('/quiz-selection')}
             className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
           >
-            {language === 'hi' ? 'परीक्षा शुरू करें' : 'Start Test'}
+            Start Test
           </button>
         </div>
       ) : (
@@ -68,9 +62,7 @@ const History: React.FC = () => {
                   <BookOpen size={20} className="text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {language === 'hi' ? 'कुल परीक्षाएं' : 'Total Tests'}
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Tests</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {testAttempts.length}
                   </p>
@@ -84,9 +76,7 @@ const History: React.FC = () => {
                   <TrendingUp size={20} className="text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {language === 'hi' ? 'औसत स्कोर' : 'Average Score'}
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Average Score</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {averageScore}%
                   </p>
@@ -100,9 +90,7 @@ const History: React.FC = () => {
                   <Award size={20} className="text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {language === 'hi' ? 'सर्वश्रेष्ठ स्कोर' : 'Best Score'}
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Best Score</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {bestScore}%
                   </p>
@@ -115,7 +103,7 @@ const History: React.FC = () => {
           {chartData.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                {language === 'hi' ? 'प्रदर्शन चार्ट' : 'Performance Chart'}
+                Performance Chart
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData}>
@@ -139,25 +127,25 @@ const History: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                {language === 'hi' ? 'नवोदय विद्यालय' : 'Navodaya Tests'}
+                Navodaya Tests
               </h3>
               <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                 {navodayaAttempts.length}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {language === 'hi' ? 'परीक्षाएं पूरी की गईं' : 'Tests Completed'}
+                Tests Completed
               </p>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                {language === 'hi' ? 'सैनिक स्कूल' : 'Sainik School Tests'}
+                Sainik School Tests
               </h3>
               <p className="text-2xl font-bold text-accent-600 dark:text-accent-400">
                 {sainikAttempts.length}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {language === 'hi' ? 'परीक्षाएं पूरी की गईं' : 'Tests Completed'}
+                Tests Completed
               </p>
             </div>
           </div>
@@ -165,7 +153,7 @@ const History: React.FC = () => {
           {/* Recent Attempts */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              {language === 'hi' ? 'हाल की परीक्षाएं' : 'Recent Tests'}
+              Recent Tests
             </h2>
             <div className="space-y-3">
               {testAttempts.slice(-5).reverse().map((attempt) => (

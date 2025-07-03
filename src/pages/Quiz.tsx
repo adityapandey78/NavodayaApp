@@ -16,7 +16,6 @@ const Quiz: React.FC = () => {
     userAnswers, 
     addUserAnswer, 
     setCurrentAttemptId,
-    language,
     clearUserAnswers
   } = useQuiz();
 
@@ -169,15 +168,15 @@ const Quiz: React.FC = () => {
   }, [currentQuestionIndex]);
 
   const handleSubmit = useCallback(() => {
-    if (confirm(language === 'hi' ? 'क्या आप टेस्ट सबमिट करना चाहते हैं?' : 'Are you sure you want to submit the test?')) {
+    if (confirm('Are you sure you want to submit the test?')) {
       navigate(`/results/${testType}/${testId}`);
     }
-  }, [language, navigate, testType, testId]);
+  }, [navigate, testType, testId]);
 
   const handleTimeUp = useCallback(() => {
-    alert(language === 'hi' ? 'समय समाप्त! टेस्ट सबमिट हो रहा है।' : 'Time is up! Submitting the test.');
+    alert('Time is up! Submitting the test.');
     navigate(`/results/${testType}/${testId}`);
-  }, [language, navigate, testType, testId]);
+  }, [navigate, testType, testId]);
 
   if (isLoading) {
     return (
@@ -227,7 +226,7 @@ const Quiz: React.FC = () => {
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold text-white">
-              {language === 'hi' && test.testNameHi ? test.testNameHi : test.testName}
+              {test.testName}
             </h1>
           </div>
           <Timer duration={test.durationInMinutes} onTimeUp={handleTimeUp} />
@@ -247,20 +246,16 @@ const Quiz: React.FC = () => {
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6">
           <div className="mb-6">
             <span className="inline-block px-4 py-2 bg-white/20 text-white text-sm rounded-full mb-4 font-medium">
-              {language === 'hi' && currentQuestion.sectionNameHi 
-                ? currentQuestion.sectionNameHi 
-                : currentQuestion.sectionName}
+              {currentQuestion.sectionName}
             </span>
             <p className="text-xl font-medium text-white leading-relaxed">
-              {language === 'hi' && currentQuestion.questionHi 
-                ? currentQuestion.questionHi 
-                : currentQuestion.question}
+              {currentQuestion.questionHi || currentQuestion.question}
             </p>
           </div>
 
           <div className="space-y-4">
             {currentQuestion.options.map((option: string, index: number) => {
-              const optionText = language === 'hi' && currentQuestion.optionsHi 
+              const optionText = currentQuestion.optionsHi 
                 ? currentQuestion.optionsHi[index] 
                 : option;
               
@@ -305,7 +300,7 @@ const Quiz: React.FC = () => {
             className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all duration-300 border border-white/20"
           >
             <ChevronLeft size={20} />
-            <span className="font-medium">{language === 'hi' ? 'पिछला' : 'Previous'}</span>
+            <span className="font-medium">Previous</span>
           </button>
 
           <div className="flex space-x-4">
@@ -315,14 +310,14 @@ const Quiz: React.FC = () => {
                 className="flex items-center space-x-2 px-8 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 <Flag size={20} />
-                <span>{language === 'hi' ? 'सबमिट करें' : 'Submit Test'}</span>
+                <span>Submit Test</span>
               </button>
             ) : (
               <button
                 onClick={handleNext}
                 className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
-                <span className="font-medium">{language === 'hi' ? 'अगला' : 'Next'}</span>
+                <span className="font-medium">Next</span>
                 <ChevronRight size={20} />
               </button>
             )}
