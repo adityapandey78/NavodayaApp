@@ -2,16 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
+import { useAuth } from '../contexts/AuthContext';
+import { testService } from '../lib/supabase';
 import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
 
 const Quiz: React.FC = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { 
     setCurrentTest, 
     userAnswers, 
-    setUserAnswers, 
     addUserAnswer, 
     setCurrentAttemptId,
     language,
@@ -24,80 +26,103 @@ const Quiz: React.FC = () => {
   const [test, setTest] = useState<any>(null);
   const [attemptId, setAttemptId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Get available tests from localStorage or default
-  const getAvailableTests = useCallback(async () => {
-    try {
-      const savedTests = localStorage.getItem('admin-tests');
-      if (savedTests) {
-        const parsedTests = JSON.parse(savedTests);
-        if (Array.isArray(parsedTests) && parsedTests.length > 0) {
-          return parsedTests;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading saved tests:', error);
-    }
+  // Load test data
+  const loadTest = useCallback(async () => {
+    if (!testId || !testType) return;
     
-    // Import default tests as fallback
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      const module = await import('../data/testData');
-      return module.availableTests;
-    } catch (error) {
-      console.error('Error loading default tests:', error);
-      return [];
-    }
-  }, []);
+      let foundTest = null;
 
-  // Initialize test data
-  useEffect(() => {
-    const loadTest = async () => {
-      setIsLoading(true);
-      
+      // Try Supabase first
       try {
-        const availableTests = await getAvailableTests();
-        const foundTest = availableTests.find((t: any) => t.id === testId && t.testType === testType);
-        
-        if (!foundTest) {
-          navigate('/quiz-selection');
-          return;
+        foundTest = await testService.getTestById(testId);
+        if (foundTest) {
+          foundTest = {
+            id: foundTest.id,
+            testType: foundTest.test_type,
+            testName: foundTest.test_name,
+            testNameHi: foundTest.test_name_hi,
+            totalMarks: foundTest.total_marks,
+            testDate: foundTest.test_date,
+            durationInMinutes: foundTest.duration_in_minutes,
+            isLive: foundTest.is_live,
+            sections: foundTest.sections
+          };
         }
-
-        setTest(foundTest);
-        
-        // Clear previous answers when starting a new test
-        clearUserAnswers();
-        
-        setCurrentTest(foundTest);
-        const newAttemptId = `${testId}-${Date.now()}`;
-        setAttemptId(newAttemptId);
-        setCurrentAttemptId(newAttemptId);
-
-        // Flatten all questions with section information
-        const questions = foundTest.sections.flatMap((section: any) => 
-          section.questions.map((q: any) => ({ 
-            ...q, 
-            sectionName: section.name,
-            sectionNameHi: section.nameHi 
-          }))
-        );
-        setAllQuestions(questions);
-
-        // Clear any existing saved answers for this session
-        localStorage.removeItem(`quiz-answers-${newAttemptId}`);
-        
-      } catch (error) {
-        console.error('Error loading test:', error);
-        navigate('/quiz-selection');
-      } finally {
-        setIsLoading(false);
+      } catch (supabaseError) {
+        console.error('Supabase error:', supabaseError);
       }
-    };
 
-    if (testId && testType) {
-      loadTest();
+      // Fallback to localStorage
+      if (!foundTest) {
+        try {
+          const savedTests = localStorage.getItem('admin-tests');
+          if (savedTests) {
+            const parsedTests = JSON.parse(savedTests);
+            if (Array.isArray(parsedTests)) {
+              foundTest = parsedTests.find((t: any) => t.id === testId && t.testType === testType);
+            }
+          }
+        } catch (localError) {
+          console.error('localStorage error:', localError);
+        }
+      }
+
+      // Final fallback to default tests
+      if (!foundTest) {
+        try {
+          const module = await import('../data/testData');
+          const defaultTests = module.availableTests || [];
+          foundTest = defaultTests.find((t: any) => t.id === testId && t.testType === testType);
+        } catch (importError) {
+          console.error('Import error:', importError);
+        }
+      }
+
+      if (!foundTest) {
+        setError('Test not found');
+        return;
+      }
+
+      setTest(foundTest);
+      setCurrentTest(foundTest);
+
+      // Clear previous answers and setup new attempt
+      clearUserAnswers();
+      const newAttemptId = `${testId}-${Date.now()}`;
+      setAttemptId(newAttemptId);
+      setCurrentAttemptId(newAttemptId);
+
+      // Flatten questions
+      const questions = foundTest.sections.flatMap((section: any) => 
+        section.questions.map((q: any) => ({ 
+          ...q, 
+          sectionName: section.name,
+          sectionNameHi: section.nameHi 
+        }))
+      );
+      setAllQuestions(questions);
+
+      // Clear saved answers for this session
+      localStorage.removeItem(`quiz-answers-${newAttemptId}`);
+      
+    } catch (error) {
+      console.error('Error loading test:', error);
+      setError('Failed to load test');
+    } finally {
+      setIsLoading(false);
     }
-  }, [testId, testType, getAvailableTests, setCurrentTest, setCurrentAttemptId, navigate, clearUserAnswers]);
+  }, [testId, testType, setCurrentTest, setCurrentAttemptId, clearUserAnswers]);
+
+  // Initialize test on mount
+  useEffect(() => {
+    loadTest();
+  }, [loadTest]);
 
   // Update selected answer when question changes
   useEffect(() => {
@@ -108,14 +133,7 @@ const Quiz: React.FC = () => {
     }
   }, [currentQuestionIndex, userAnswers, allQuestions]);
 
-  // Auto-save answers
-  useEffect(() => {
-    if (userAnswers.length > 0 && attemptId) {
-      localStorage.setItem(`quiz-answers-${attemptId}`, JSON.stringify(userAnswers));
-    }
-  }, [userAnswers, attemptId]);
-
-  const handleAnswerSelect = useCallback((answer: string) => {
+  const handleAnswerSelect = (answer: string) => {
     setSelectedAnswer(answer);
     
     if (allQuestions.length > 0 && currentQuestionIndex < allQuestions.length) {
@@ -129,7 +147,7 @@ const Quiz: React.FC = () => {
       
       addUserAnswer(userAnswer);
     }
-  }, [allQuestions, currentQuestionIndex, addUserAnswer]);
+  };
 
   const handleNext = () => {
     if (currentQuestionIndex < allQuestions.length - 1) {
@@ -145,7 +163,6 @@ const Quiz: React.FC = () => {
 
   const handleSubmit = () => {
     if (confirm(language === 'hi' ? 'क्या आप टेस्ट सबमिट करना चाहते हैं?' : 'Are you sure you want to submit the test?')) {
-      // Clean up saved answers
       if (attemptId) {
         localStorage.removeItem(`quiz-answers-${attemptId}`);
       }
@@ -155,19 +172,36 @@ const Quiz: React.FC = () => {
 
   const handleTimeUp = useCallback(() => {
     alert(language === 'hi' ? 'समय समाप्त! टेस्ट सबमिट हो रहा है।' : 'Time is up! Submitting the test.');
-    // Clean up saved answers
     if (attemptId) {
       localStorage.removeItem(`quiz-answers-${attemptId}`);
     }
     navigate(`/results/${testType}/${testId}`);
   }, [language, attemptId, navigate, testType, testId]);
 
-  if (isLoading || !test || allQuestions.length === 0) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading test...</p>
+          <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-lg font-medium">Loading test...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !test || allQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-500 via-pink-500 to-purple-600 flex items-center justify-center p-4">
+        <div className="text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+          <p className="text-white text-lg font-medium mb-4">
+            {error || 'Test not found or has no questions'}
+          </p>
+          <button
+            onClick={() => navigate('/quiz-selection')}
+            className="bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          >
+            Back to Tests
+          </button>
         </div>
       </div>
     );
@@ -177,12 +211,12 @@ const Quiz: React.FC = () => {
   const answeredQuestions = userAnswers.length;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm p-4">
+      <div className="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center space-x-4">
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-xl font-bold text-white">
               {language === 'hi' && test.testNameHi ? test.testNameHi : test.testName}
             </h1>
           </div>
@@ -190,7 +224,7 @@ const Quiz: React.FC = () => {
         </div>
         
         <div className="mt-4 max-w-4xl mx-auto">
-          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-sm text-white/80 mb-2">
             <span>Question {currentQuestionIndex + 1} of {allQuestions.length}</span>
             <span>{answeredQuestions}/{allQuestions.length} answered</span>
           </div>
@@ -200,21 +234,21 @@ const Quiz: React.FC = () => {
 
       {/* Question */}
       <div className="p-4 max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm mb-6">
-          <div className="mb-4">
-            <span className="inline-block px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-sm rounded-full mb-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6">
+          <div className="mb-6">
+            <span className="inline-block px-4 py-2 bg-white/20 text-white text-sm rounded-full mb-4 font-medium">
               {language === 'hi' && currentQuestion.sectionNameHi 
                 ? currentQuestion.sectionNameHi 
                 : currentQuestion.sectionName}
             </span>
-            <p className="text-lg font-medium text-gray-900 dark:text-white leading-relaxed">
+            <p className="text-xl font-medium text-white leading-relaxed">
               {language === 'hi' && currentQuestion.questionHi 
                 ? currentQuestion.questionHi 
                 : currentQuestion.question}
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {currentQuestion.options.map((option: string, index: number) => {
               const optionText = language === 'hi' && currentQuestion.optionsHi 
                 ? currentQuestion.optionsHi[index] 
@@ -226,26 +260,26 @@ const Quiz: React.FC = () => {
                 <button
                   key={`${currentQuestion.id}-${index}`}
                   onClick={() => handleAnswerSelect(option)}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+                  className={`w-full p-6 rounded-xl border-2 text-left transition-all duration-300 ${
                     isSelected
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 shadow-md transform scale-[1.02]'
-                      : 'border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:shadow-sm'
+                      ? 'border-cyan-400 bg-gradient-to-r from-cyan-400/20 to-blue-500/20 text-white shadow-lg transform scale-[1.02]'
+                      : 'border-white/20 hover:border-white/40 bg-white/10 hover:bg-white/15 text-white hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                       isSelected
-                        ? 'border-primary-500 bg-primary-500'
-                        : 'border-gray-300 dark:border-gray-500'
+                        ? 'border-cyan-400 bg-cyan-400'
+                        : 'border-white/40'
                     }`}>
                       {isSelected && (
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
                       )}
                     </div>
-                    <span className="font-medium text-primary-600 dark:text-primary-400">
+                    <span className="font-bold text-cyan-300 text-lg">
                       {String.fromCharCode(65 + index)}.
                     </span>
-                    <span className="flex-1">{optionText}</span>
+                    <span className="flex-1 text-lg">{optionText}</span>
                   </div>
                 </button>
               );
@@ -258,17 +292,17 @@ const Quiz: React.FC = () => {
           <button
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all duration-300 border border-white/20"
           >
             <ChevronLeft size={20} />
-            <span>{language === 'hi' ? 'पिछला' : 'Previous'}</span>
+            <span className="font-medium">{language === 'hi' ? 'पिछला' : 'Previous'}</span>
           </button>
 
-          <div className="flex space-x-3">
+          <div className="flex space-x-4">
             {currentQuestionIndex === allQuestions.length - 1 ? (
               <button
                 onClick={handleSubmit}
-                className="flex items-center space-x-2 px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
+                className="flex items-center space-x-2 px-8 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 <Flag size={20} />
                 <span>{language === 'hi' ? 'सबमिट करें' : 'Submit Test'}</span>
@@ -276,9 +310,9 @@ const Quiz: React.FC = () => {
             ) : (
               <button
                 onClick={handleNext}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors"
+                className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
-                <span>{language === 'hi' ? 'अगला' : 'Next'}</span>
+                <span className="font-medium">{language === 'hi' ? 'अगला' : 'Next'}</span>
                 <ChevronRight size={20} />
               </button>
             )}

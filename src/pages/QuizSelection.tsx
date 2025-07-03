@@ -18,62 +18,62 @@ const QuizSelection: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Try to load from Supabase first
-      const supabaseTests = await testService.getLiveTests();
+      let tests: any[] = [];
       
-      if (supabaseTests.length > 0) {
-        // Convert Supabase format to app format
-        const formattedTests = supabaseTests.map(test => ({
-          id: test.id,
-          testType: test.test_type,
-          testName: test.test_name,
-          testNameHi: test.test_name_hi,
-          totalMarks: test.total_marks,
-          testDate: test.test_date,
-          durationInMinutes: test.duration_in_minutes,
-          isLive: test.is_live,
-          sections: test.sections
-        }));
-        setAvailableTests(formattedTests);
-      } else {
-        // Fallback to localStorage
-        const savedTests = localStorage.getItem('admin-tests');
-        if (savedTests) {
-          try {
+      // Try to load from Supabase first
+      try {
+        const supabaseTests = await testService.getLiveTests();
+        
+        if (supabaseTests.length > 0) {
+          // Convert Supabase format to app format
+          tests = supabaseTests.map(test => ({
+            id: test.id,
+            testType: test.test_type,
+            testName: test.test_name,
+            testNameHi: test.test_name_hi,
+            totalMarks: test.total_marks,
+            testDate: test.test_date,
+            durationInMinutes: test.duration_in_minutes,
+            isLive: test.is_live,
+            sections: test.sections
+          }));
+        }
+      } catch (supabaseError) {
+        console.error('Supabase error:', supabaseError);
+      }
+      
+      // Fallback to localStorage if no Supabase tests
+      if (tests.length === 0) {
+        try {
+          const savedTests = localStorage.getItem('admin-tests');
+          if (savedTests) {
             const parsedTests = JSON.parse(savedTests);
             if (Array.isArray(parsedTests)) {
-              setAvailableTests(parsedTests.filter(test => test.isLive));
+              tests = parsedTests.filter(test => test.isLive);
             }
-          } catch (parseError) {
-            console.error('Error parsing saved tests:', parseError);
           }
-        }
-        
-        // If still no tests, load defaults
-        if (availableTests.length === 0) {
-          const module = await import('../data/testData');
-          const defaultTests = module.availableTests || [];
-          setAvailableTests(defaultTests.filter(test => test.isLive));
+        } catch (parseError) {
+          console.error('Error parsing saved tests:', parseError);
         }
       }
+      
+      // Final fallback to default tests
+      if (tests.length === 0) {
+        try {
+          const module = await import('../data/testData');
+          const defaultTests = module.availableTests || [];
+          tests = defaultTests.filter(test => test.isLive);
+        } catch (importError) {
+          console.error('Import error:', importError);
+        }
+      }
+      
+      setAvailableTests(tests);
       
     } catch (error) {
       console.error('Error loading tests:', error);
       setError('Failed to load tests');
-      
-      // Try localStorage as final fallback
-      try {
-        const savedTests = localStorage.getItem('admin-tests');
-        if (savedTests) {
-          const parsedTests = JSON.parse(savedTests);
-          if (Array.isArray(parsedTests)) {
-            setAvailableTests(parsedTests.filter(test => test.isLive));
-          }
-        }
-      } catch (fallbackError) {
-        console.error('Fallback error:', fallbackError);
-        setAvailableTests([]);
-      }
+      setAvailableTests([]);
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +104,7 @@ const QuizSelection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white text-lg font-medium">Loading tests...</p>
@@ -115,7 +115,7 @@ const QuizSelection: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-400 via-pink-500 to-purple-500 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-red-500 via-pink-500 to-purple-600 flex items-center justify-center p-4">
         <div className="text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8">
           <p className="text-white text-lg font-medium mb-4">{error}</p>
           <button
@@ -130,7 +130,7 @@ const QuizSelection: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 p-4">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-4">
           <div className="inline-block p-4 bg-white/10 backdrop-blur-lg rounded-2xl">

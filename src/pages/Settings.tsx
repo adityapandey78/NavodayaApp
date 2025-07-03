@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun, Globe, RotateCcw, User, Shield } from 'lucide-react';
+import { Moon, Sun, Globe, User, Shield } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useQuiz } from '../contexts/QuizContext';
 
@@ -7,26 +7,8 @@ const Settings: React.FC = () => {
   const { darkMode, toggleDarkMode } = useTheme();
   const { language, setLanguage, testAttempts } = useQuiz();
 
-  const clearLocalStorage = () => {
-    if (confirm(language === 'hi' 
-      ? 'क्या आप वाकई सभी स्थानीय डेटा को साफ़ करना चाहते हैं? इससे सभी सेव किए गए उत्तर और प्राथमिकताएं हट जाएंगी।' 
-      : 'Are you sure you want to clear all local data? This will remove all saved answers and preferences.')) {
-      // Clear only user-specific data, not admin data
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('quiz-answers-') || key.startsWith('prep-with-satyam-'))) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-      alert(language === 'hi' ? 'स्थानीय डेटा साफ़ कर दिया गया है।' : 'Local data cleared successfully.');
-      window.location.reload();
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">

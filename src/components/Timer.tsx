@@ -11,10 +11,10 @@ const Timer: React.FC<TimerProps> = ({ duration, onTimeUp }) => {
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
-    if (!isActive) return;
-
-    if (timeLeft <= 0) {
-      onTimeUp();
+    if (!isActive || timeLeft <= 0) {
+      if (timeLeft <= 0) {
+        onTimeUp();
+      }
       return;
     }
 
@@ -39,15 +39,15 @@ const Timer: React.FC<TimerProps> = ({ duration, onTimeUp }) => {
 
   const getTimerColor = () => {
     const percentage = (timeLeft / (duration * 60)) * 100;
-    if (percentage > 50) return 'text-green-600 dark:text-green-400';
-    if (percentage > 25) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+    if (percentage > 50) return 'text-green-300';
+    if (percentage > 25) return 'text-yellow-300';
+    return 'text-red-300';
   };
 
   return (
-    <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 shadow-md">
+    <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-lg rounded-xl px-4 py-2 border border-white/20">
       <Clock size={20} className={getTimerColor()} />
-      <span className={`font-mono text-lg font-semibold ${getTimerColor()}`}>
+      <span className={`font-mono text-lg font-bold ${getTimerColor()}`}>
         {formatTime(timeLeft)}
       </span>
     </div>
