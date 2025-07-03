@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Shield, Users, Clock } from 'lucide-react';
+import { BookOpen, Shield, Users, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { testService } from '../lib/supabase';
 
@@ -37,9 +37,10 @@ const QuizSelection: React.FC = () => {
         }
       } catch (supabaseError) {
         console.error('Supabase error:', supabaseError);
+        setError('Database connection failed. Loading fallback tests...');
       }
       
-      // Fallback to localStorage if no Supabase tests
+      // Fallback to localStorage if no Supabase tests and there was an error
       if (tests.length === 0) {
         try {
           const savedTests = localStorage.getItem('admin-tests');
@@ -60,8 +61,10 @@ const QuizSelection: React.FC = () => {
           const module = await import('../data/testData');
           const defaultTests = module.availableTests || [];
           tests = defaultTests.filter(test => test.isLive);
+          setError('Using default tests. Database may be unavailable.');
         } catch (importError) {
           console.error('Import error:', importError);
+          setError('Failed to load tests. Please try again later.');
         }
       }
       
@@ -104,23 +107,7 @@ const QuizSelection: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg font-medium">Loading tests...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-500 via-pink-500 to-purple-600 flex items-center justify-center p-4">
-        <div className="text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8">
-          <p className="text-white text-lg font-medium mb-4">{error}</p>
-          <button
-            onClick={loadTests}
-            className="bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-          >
-            Retry
-          </button>
+          <p className="text-white text-lg font-medium">Loading tests from database...</p>
         </div>
       </div>
     );
@@ -137,6 +124,22 @@ const QuizSelection: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-4 flex items-center space-x-3">
+            <AlertCircle size={20} className="text-orange-300" />
+            <div>
+              <p className="text-orange-200">{error}</p>
+              <button
+                onClick={loadTests}
+                className="text-orange-300 hover:text-orange-200 underline text-sm mt-1"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Navodaya Tests */}
         {navodayaTests.length > 0 && (
@@ -242,7 +245,7 @@ const QuizSelection: React.FC = () => {
           </div>
         )}
 
-        {(navodayaTests.length === 0 && sainikTests.length === 0) && (
+        {(navodayaTests.length === 0 && sainikTests.length === 0) && !error && (
           <div className="text-center py-16">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-12 border border-white/20">
               <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
