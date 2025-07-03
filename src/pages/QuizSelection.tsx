@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Shield, Users, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { testService } from '../lib/supabase';
 
 const QuizSelection: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showError, showWarning, showInfo } = useToast();
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,29 +20,34 @@ const QuizSelection: React.FC = () => {
       
       let tests: any[] = [];
       
-      // Always try Supabase first for live tests
-      try {
-        const supabaseTests = await testService.getLiveTests();
-        
-        if (supabaseTests.length > 0) {
-          tests = supabaseTests.map(test => ({
-            id: test.id,
-            testType: test.test_type,
-            testName: test.test_name,
-            testNameHi: test.test_name_hi,
-            totalMarks: test.total_marks,
-            testDate: test.test_date,
-            durationInMinutes: test.duration_in_minutes,
-            isLive: test.is_live,
-            sections: test.sections
-          }));
+      // Try Supabase first for live tests
+      if (testService.isAvailable()) {
+        try {
+          const supabaseTests = await testService.getLiveTests();
+          
+          if (supabaseTests.length > 0) {
+            tests = supabaseTests.map(test => ({
+              id: test.id,
+              testType: test.test_type,
+              testName: test.test_name,
+              testNameHi: test.test_name_hi,
+              totalMarks: test.total_marks,
+              testDate: test.test_date,
+              durationInMinutes: test.duration_in_minutes,
+              isLive: test.is_live,
+              sections: test.sections
+            }));
+            showInfo('Tests loaded from database');
+          }
+        } catch (supabaseError) {
+          console.error('Supabase error:', supabaseError);
+          showWarning('Database connection failed. Loading fallback tests...');
         }
-      } catch (supabaseError) {
-        console.error('Supabase error:', supabaseError);
-        setError('Database connection failed. Loading fallback tests...');
+      } else {
+        showWarning('Database not available. Using local tests.');
       }
       
-      // Fallback to localStorage if no Supabase tests and there was an error
+      // Fallback to localStorage if no Supabase tests
       if (tests.length === 0) {
         try {
           const savedTests = localStorage.getItem('admin-tests');
@@ -48,10 +55,14 @@ const QuizSelection: React.FC = () => {
             const parsedTests = JSON.parse(savedTests);
             if (Array.isArray(parsedTests)) {
               tests = parsedTests.filter(test => test.isLive);
+              if (tests.length > 0) {
+                showInfo('Tests loaded from local storage');
+              }
             }
           }
         } catch (parseError) {
           console.error('Error parsing saved tests:', parseError);
+          showError('Failed to load saved tests');
         }
       }
       
@@ -61,10 +72,10 @@ const QuizSelection: React.FC = () => {
           const module = await import('../data/testData');
           const defaultTests = module.availableTests || [];
           tests = defaultTests.filter(test => test.isLive);
-          setError('Using default tests. Database may be unavailable.');
+          showInfo('Using default tests');
         } catch (importError) {
           console.error('Import error:', importError);
-          setError('Failed to load tests. Please try again later.');
+          showError('Failed to load tests. Please try again later.');
         }
       }
       
@@ -73,6 +84,7 @@ const QuizSelection: React.FC = () => {
     } catch (error) {
       console.error('Error loading tests:', error);
       setError('Failed to load tests');
+      showError('Failed to load tests');
       setAvailableTests([]);
     } finally {
       setIsLoading(false);
@@ -107,7 +119,7 @@ const QuizSelection: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg font-medium">Loading tests from database...</p>
+          <p className="text-white text-lg font-medium">Loading tests...</p>
         </div>
       </div>
     );
@@ -124,22 +136,6 @@ const QuizSelection: React.FC = () => {
             </p>
           </div>
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-4 flex items-center space-x-3">
-            <AlertCircle size={20} className="text-orange-300" />
-            <div>
-              <p className="text-orange-200">{error}</p>
-              <button
-                onClick={loadTests}
-                className="text-orange-300 hover:text-orange-200 underline text-sm mt-1"
-              >
-                Try again
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Navodaya Tests */}
         {navodayaTests.length > 0 && (
@@ -252,9 +248,15 @@ const QuizSelection: React.FC = () => {
                 <BookOpen size={40} className="text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-4">No Tests Available</h3>
-              <p className="text-white/80 text-lg">
+              <p className="text-white/80 text-lg mb-6">
                 Please check back later or contact administrator
               </p>
+              <button
+                onClick={loadTests}
+                className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300"
+              >
+                Retry Loading
+              </button>
             </div>
           </div>
         )}

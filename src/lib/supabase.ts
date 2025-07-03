@@ -1,13 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Safely get environment variables with fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Only create client if we have valid credentials
+let supabase: any = null;
+let isSupabaseAvailable = false;
+
+try {
+  if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    isSupabaseAvailable = true;
+  } else {
+    console.warn('Supabase credentials not available or invalid. Running in offline mode.');
+  }
+} catch (error) {
+  console.error('Failed to initialize Supabase:', error);
+  isSupabaseAvailable = false;
 }
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Database types
 export interface DatabaseTest {
@@ -42,8 +53,15 @@ export interface DatabaseTestAttempt {
 
 // Test management functions
 export const testService = {
+  // Check if Supabase is available
+  isAvailable: () => isSupabaseAvailable && supabase,
+
   // Get all live tests
   async getLiveTests(): Promise<DatabaseTest[]> {
+    if (!isSupabaseAvailable || !supabase) {
+      return [];
+    }
+
     try {
       const { data, error } = await supabase
         .from('tests')
@@ -65,6 +83,10 @@ export const testService = {
 
   // Get all tests (for admin)
   async getAllTests(): Promise<DatabaseTest[]> {
+    if (!isSupabaseAvailable || !supabase) {
+      return [];
+    }
+
     try {
       const { data, error } = await supabase
         .from('tests')
@@ -85,6 +107,10 @@ export const testService = {
 
   // Create a new test
   async createTest(testData: any): Promise<DatabaseTest | null> {
+    if (!isSupabaseAvailable || !supabase) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('tests')
@@ -115,6 +141,10 @@ export const testService = {
 
   // Update a test
   async updateTest(id: string, testData: any): Promise<DatabaseTest | null> {
+    if (!isSupabaseAvailable || !supabase) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('tests')
@@ -146,6 +176,10 @@ export const testService = {
 
   // Toggle test live status
   async toggleTestStatus(id: string, isLive: boolean): Promise<boolean> {
+    if (!isSupabaseAvailable || !supabase) {
+      return false;
+    }
+
     try {
       const { error } = await supabase
         .from('tests')
@@ -166,6 +200,10 @@ export const testService = {
 
   // Delete a test
   async deleteTest(id: string): Promise<boolean> {
+    if (!isSupabaseAvailable || !supabase) {
+      return false;
+    }
+
     try {
       const { error } = await supabase
         .from('tests')
@@ -186,6 +224,10 @@ export const testService = {
 
   // Get test by ID
   async getTestById(id: string): Promise<DatabaseTest | null> {
+    if (!isSupabaseAvailable || !supabase) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('tests')
@@ -210,6 +252,10 @@ export const testService = {
 export const attemptService = {
   // Get user's test attempts
   async getUserAttempts(userId: string): Promise<DatabaseTestAttempt[]> {
+    if (!isSupabaseAvailable || !supabase) {
+      return [];
+    }
+
     try {
       const { data, error } = await supabase
         .from('test_attempts')
@@ -231,6 +277,10 @@ export const attemptService = {
 
   // Save test attempt
   async saveAttempt(attemptData: any, userId: string): Promise<DatabaseTestAttempt | null> {
+    if (!isSupabaseAvailable || !supabase) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('test_attempts')
@@ -264,8 +314,15 @@ export const attemptService = {
 
 // Auth helper functions
 export const authService = {
+  // Check if auth is available
+  isAvailable: () => isSupabaseAvailable && supabase,
+
   // Sign up with email and password
   async signUp(email: string, password: string) {
+    if (!isSupabaseAvailable || !supabase) {
+      return { data: null, error: new Error('Authentication not available') };
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -281,6 +338,10 @@ export const authService = {
 
   // Sign in with email and password
   async signIn(email: string, password: string) {
+    if (!isSupabaseAvailable || !supabase) {
+      return { data: null, error: new Error('Authentication not available') };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -296,6 +357,10 @@ export const authService = {
 
   // Sign out
   async signOut() {
+    if (!isSupabaseAvailable || !supabase) {
+      return { error: new Error('Authentication not available') };
+    }
+
     try {
       const { error } = await supabase.auth.signOut();
       return { error };
@@ -307,6 +372,10 @@ export const authService = {
 
   // Get current user
   async getCurrentUser() {
+    if (!isSupabaseAvailable || !supabase) {
+      return null;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       return user;
@@ -318,6 +387,10 @@ export const authService = {
 
   // Listen to auth changes
   onAuthStateChange(callback: (event: string, session: any) => void) {
+    if (!isSupabaseAvailable || !supabase) {
+      return { data: { subscription: { unsubscribe: () => {} } } };
+    }
+
     try {
       return supabase.auth.onAuthStateChange(callback);
     } catch (error) {
@@ -326,3 +399,6 @@ export const authService = {
     }
   }
 };
+
+// Export the supabase client and availability status
+export { supabase, isSupabaseAvailable };
