@@ -1,11 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get environment variables with fallbacks for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ree7xjrvqhqjqhqjqhqj.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlZTd4anJ2cWhxanFocWpxaHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5MDU3MzgsImV4cCI6MjA1MTQ4MTczOH0.Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6Ql6';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables are missing. Using fallback values.');
+  throw new Error('Missing Supabase environment variables');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
