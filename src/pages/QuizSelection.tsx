@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Shield, Users, Clock, AlertCircle } from 'lucide-react';
+import { BookOpen, Shield, Users, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { testService } from '../lib/supabase';
+import { testService, networkService } from '../lib/supabase';
 
 const QuizSelection: React.FC = () => {
   const navigate = useNavigate();
@@ -12,80 +12,34 @@ const QuizSelection: React.FC = () => {
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const loadTests = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      let tests: any[] = [];
-      
-      // Try Supabase first for live tests
-      if (testService.isAvailable()) {
-        try {
-          const supabaseTests = await testService.getLiveTests();
-          
-          if (supabaseTests.length > 0) {
-            tests = supabaseTests.map(test => ({
-              id: test.id,
-              testType: test.test_type,
-              testName: test.test_name,
-              testNameHi: test.test_name_hi,
-              totalMarks: test.total_marks,
-              testDate: test.test_date,
-              durationInMinutes: test.duration_in_minutes,
-              isLive: test.is_live,
-              sections: test.sections
-            }));
-            showInfo('Tests loaded from database');
-          }
-        } catch (supabaseError) {
-          console.error('Supabase error:', supabaseError);
-          showWarning('Database connection failed. Loading fallback tests...');
-        }
-      } else {
-        showWarning('Database not available. Using local tests.');
-      }
-      
-      // Fallback to localStorage if no Supabase tests
-      if (tests.length === 0) {
-        try {
-          const savedTests = localStorage.getItem('admin-tests');
-          if (savedTests) {
-            const parsedTests = JSON.parse(savedTests);
-            if (Array.isArray(parsedTests)) {
-              tests = parsedTests.filter(test => test.isLive);
-              if (tests.length > 0) {
-                showInfo('Tests loaded from local storage');
-              }
-            }
-          }
-        } catch (parseError) {
-          console.error('Error parsing saved tests:', parseError);
-          showError('Failed to load saved tests');
-        }
-      }
-      
-      // Final fallback to default tests
-      if (tests.length === 0) {
-        try {
-          const module = await import('../data/testData');
-          const defaultTests = module.availableTests || [];
-          tests = defaultTests.filter(test => test.isLive);
-          showInfo('Using default tests');
-        } catch (importError) {
-          console.error('Import error:', importError);
-          showError('Failed to load tests. Please try again later.');
-        }
-      }
-      
+      const tests = await testService.getLiveTests();
       setAvailableTests(tests);
       
-    } catch (error) {
+      if (tests.length > 0) {
+        if (networkService.isOnline()) {
+          showInfo('Tests loaded from database');
+        } else {
+          showWarning('Using cached tests - you are offline');
+        }
+      }
+      
+    } catch (error: any) {
       console.error('Error loading tests:', error);
-      setError('Failed to load tests');
-      showError('Failed to load tests');
+      setError(error.message);
       setAvailableTests([]);
+      
+      if (error.message.includes('internet') || error.message.includes('connection')) {
+        showError('No internet connection. Please connect to load tests.');
+      } else {
+        showError('Failed to load tests. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -94,16 +48,24 @@ const QuizSelection: React.FC = () => {
   useEffect(() => {
     loadTests();
 
-    // Listen for storage changes and custom events
-    const handleStorageChange = () => loadTests();
-    const handleTestsUpdated = () => loadTests();
+    // Listen for online/offline events
+    const handleOnline = () => {
+      setIsOnline(true);
+      showInfo('Back online! Refreshing tests...');
+      loadTests();
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      showWarning('You are now offline. Using cached data if available.');
+    };
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('testsUpdated', handleTestsUpdated);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('testsUpdated', handleTestsUpdated);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -128,14 +90,45 @@ const QuizSelection: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 p-4">
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Connection Status */}
         <div className="text-center space-y-4">
           <div className="inline-block p-4 bg-white/10 backdrop-blur-lg rounded-2xl">
+            <div className="flex items-center justify-center space-x-3 mb-2">
+              {isOnline ? (
+                <Wifi size={20} className="text-green-300" />
+              ) : (
+                <WifiOff size={20} className="text-red-300" />
+              )}
+              <span className={`text-sm font-medium ${isOnline ? 'text-green-200' : 'text-red-200'}`}>
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+            </div>
             <h1 className="text-3xl font-bold text-white">Choose Your Test</h1>
             <p className="text-white/80 mt-2">
-              Select a test below to start your preparation
+              {isOnline 
+                ? 'Select a test below to start your preparation'
+                : 'Using cached tests - results will be saved locally'
+              }
             </p>
           </div>
         </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <AlertCircle size={24} className="text-red-300" />
+              <h3 className="text-xl font-bold text-red-200">Unable to Load Tests</h3>
+            </div>
+            <p className="text-red-300 mb-4">{error}</p>
+            <button
+              onClick={loadTests}
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
 
         {/* Navodaya Tests */}
         {navodayaTests.length > 0 && (
@@ -241,6 +234,7 @@ const QuizSelection: React.FC = () => {
           </div>
         )}
 
+        {/* No Tests Available */}
         {(navodayaTests.length === 0 && sainikTests.length === 0) && !error && (
           <div className="text-center py-16">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-12 border border-white/20">
@@ -249,13 +243,16 @@ const QuizSelection: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-white mb-4">No Tests Available</h3>
               <p className="text-white/80 text-lg mb-6">
-                Please check back later or contact administrator
+                {isOnline 
+                  ? 'Please check back later or contact administrator'
+                  : 'No cached tests available. Please connect to internet to load tests.'
+                }
               </p>
               <button
                 onClick={loadTests}
                 className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300"
               >
-                Retry Loading
+                {isOnline ? 'Retry Loading' : 'Check Connection'}
               </button>
             </div>
           </div>

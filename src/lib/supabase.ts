@@ -1,46 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get environment variables with fallbacks to localStorage
-const getSupabaseUrl = () => {
-  return import.meta.env.VITE_SUPABASE_URL || 
-         localStorage.getItem('supabase_url') || 
-         '';
-};
-
-const getSupabaseKey = () => {
-  return import.meta.env.VITE_SUPABASE_ANON_KEY || 
-         localStorage.getItem('supabase_key') || 
-         '';
-};
+// Safely get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Only create client if we have valid credentials
 let supabase: any = null;
 let isSupabaseAvailable = false;
 
-const initializeSupabase = () => {
-  const supabaseUrl = getSupabaseUrl();
-  const supabaseAnonKey = getSupabaseKey();
-
-  try {
-    if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')) {
-      supabase = createClient(supabaseUrl, supabaseAnonKey);
-      isSupabaseAvailable = true;
-      console.log('✅ Supabase initialized successfully');
-    } else {
-      console.warn('⚠️ Supabase credentials not available or invalid. Running in offline mode.');
-      isSupabaseAvailable = false;
-    }
-  } catch (error) {
-    console.error('❌ Failed to initialize Supabase:', error);
-    isSupabaseAvailable = false;
+try {
+  if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    isSupabaseAvailable = true;
+    console.log('✅ Supabase initialized successfully');
+  } else {
+    console.error('❌ Supabase credentials not found. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+    throw new Error('Supabase credentials required');
   }
-};
-
-// Initialize on load
-initializeSupabase();
-
-// Re-initialize when storage changes
-window.addEventListener('storage', initializeSupabase);
+} catch (error) {
+  console.error('❌ Failed to initialize Supabase:', error);
+  isSupabaseAvailable = false;
+}
 
 // Database types
 export interface DatabaseTest {
@@ -73,24 +53,99 @@ export interface DatabaseTestAttempt {
   created_at: string;
 }
 
+// Cache management
+const CACHE_KEYS = {
+  TESTS: 'cached_tests',
+  LAST_SYNC: 'last_sync_time'
+};
+
+const cacheService = {
+  // Cache tests data
+  cacheTests: (tests: any[]) => {
+    try {
+      localStorage.setItem(CACHE_KEYS.TESTS, JSON.stringify(tests));
+      localStorage.setItem(CACHE_KEYS.LAST_SYNC, new Date().toISOString());
+    } catch (error) {
+      console.error('Failed to cache tests:', error);
+    }
+  },
+
+  // Get cached tests
+  getCachedTests: (): any[] => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEYS.TESTS);
+      return cached ? JSON.parse(cached) : [];
+    } catch (error) {
+      console.error('Failed to get cached tests:', error);
+      return [];
+    }
+  },
+
+  // Check if cache is valid (less than 1 hour old)
+  isCacheValid: (): boolean => {
+    try {
+      const lastSync = localStorage.getItem(CACHE_KEYS.LAST_SYNC);
+      if (!lastSync) return false;
+      
+      const lastSyncTime = new Date(lastSync).getTime();
+      const now = new Date().getTime();
+      const oneHour = 60 * 60 * 1000;
+      
+      return (now - lastSyncTime) < oneHour;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  // Clear cache
+  clearCache: () => {
+    localStorage.removeItem(CACHE_KEYS.TESTS);
+    localStorage.removeItem(CACHE_KEYS.LAST_SYNC);
+  }
+};
+
+// Network status checker
+const networkService = {
+  isOnline: () => navigator.onLine,
+  
+  // Check if we can reach Supabase
+  checkSupabaseConnection: async (): Promise<boolean> => {
+    if (!isSupabaseAvailable || !supabase) return false;
+    
+    try {
+      const { error } = await supabase.from('tests').select('count', { count: 'exact', head: true });
+      return !error || error.code === 'PGRST116'; // PGRST116 is "table not found" which is ok
+    } catch (error) {
+      return false;
+    }
+  }
+};
+
 // Test management functions
 export const testService = {
   // Check if Supabase is available
   isAvailable: () => isSupabaseAvailable && supabase,
 
-  // Re-initialize connection
-  reconnect: () => {
-    initializeSupabase();
-    return isSupabaseAvailable;
+  // Check network and Supabase connection
+  checkConnection: async (): Promise<boolean> => {
+    if (!networkService.isOnline()) {
+      throw new Error('No internet connection. Please connect to the internet to continue.');
+    }
+    
+    const canReachSupabase = await networkService.checkSupabaseConnection();
+    if (!canReachSupabase) {
+      throw new Error('Cannot connect to database. Please check your internet connection.');
+    }
+    
+    return true;
   },
 
-  // Get all live tests
-  async getLiveTests(): Promise<DatabaseTest[]> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
-
+  // Get all live tests with caching
+  async getLiveTests(): Promise<any[]> {
     try {
+      // Always try to fetch from Supabase first
+      await this.checkConnection();
+      
       const { data, error } = await supabase
         .from('tests')
         .select('*')
@@ -98,245 +153,294 @@ export const testService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching tests:', error);
         throw error;
       }
 
-      return data || [];
+      const formattedTests = (data || []).map((test: DatabaseTest) => ({
+        id: test.id,
+        testType: test.test_type,
+        testName: test.test_name,
+        testNameHi: test.test_name_hi,
+        totalMarks: test.total_marks,
+        testDate: test.test_date,
+        durationInMinutes: test.duration_in_minutes,
+        isLive: test.is_live,
+        sections: test.sections
+      }));
+
+      // Cache the tests for offline quiz-taking
+      cacheService.cacheTests(formattedTests);
+      
+      return formattedTests;
     } catch (error) {
-      console.error('Supabase connection error:', error);
+      // If online but can't reach Supabase, throw error
+      if (networkService.isOnline()) {
+        throw error;
+      }
+      
+      // If offline, try to use cached data for quiz-taking only
+      const cachedTests = cacheService.getCachedTests();
+      if (cachedTests.length > 0) {
+        console.warn('Using cached tests - offline mode');
+        return cachedTests;
+      }
+      
+      throw new Error('No internet connection and no cached data available.');
+    }
+  },
+
+  // Get test by ID (with cache fallback for quiz-taking)
+  async getTestById(id: string): Promise<any | null> {
+    try {
+      // Try Supabase first
+      await this.checkConnection();
+      
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return {
+        id: data.id,
+        testType: data.test_type,
+        testName: data.test_name,
+        testNameHi: data.test_name_hi,
+        totalMarks: data.total_marks,
+        testDate: data.test_date,
+        durationInMinutes: data.duration_in_minutes,
+        isLive: data.is_live,
+        sections: data.sections
+      };
+    } catch (error) {
+      // If offline, try cached data
+      if (!networkService.isOnline()) {
+        const cachedTests = cacheService.getCachedTests();
+        const test = cachedTests.find(t => t.id === id);
+        if (test) {
+          console.warn('Using cached test data - offline mode');
+          return test;
+        }
+      }
+      
       throw error;
     }
   },
 
-  // Get all tests (for admin)
+  // Admin functions - ALWAYS require online connection
   async getAllTests(): Promise<DatabaseTest[]> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
+    await this.checkConnection();
+    
+    const { data, error } = await supabase
+      .from('tests')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching all tests:', error);
-        throw error;
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Supabase connection error:', error);
+    if (error) {
       throw error;
     }
+
+    return data || [];
   },
 
-  // Create a new test
   async createTest(testData: any): Promise<DatabaseTest | null> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
+    await this.checkConnection();
+    
+    const { data, error } = await supabase
+      .from('tests')
+      .insert([{
+        test_type: testData.testType,
+        test_name: testData.testName,
+        test_name_hi: testData.testNameHi,
+        total_marks: testData.totalMarks,
+        test_date: testData.testDate,
+        duration_in_minutes: testData.durationInMinutes,
+        is_live: testData.isLive,
+        sections: testData.sections
+      }])
+      .select()
+      .single();
 
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .insert([{
-          test_type: testData.testType,
-          test_name: testData.testName,
-          test_name_hi: testData.testNameHi,
-          total_marks: testData.totalMarks,
-          test_date: testData.testDate,
-          duration_in_minutes: testData.durationInMinutes,
-          is_live: testData.isLive,
-          sections: testData.sections
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating test:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Supabase connection error:', error);
+    if (error) {
       throw error;
     }
+
+    // Clear cache to force refresh
+    cacheService.clearCache();
+    
+    return data;
   },
 
-  // Update a test
   async updateTest(id: string, testData: any): Promise<DatabaseTest | null> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
+    await this.checkConnection();
+    
+    const { data, error } = await supabase
+      .from('tests')
+      .update({
+        test_type: testData.testType,
+        test_name: testData.testName,
+        test_name_hi: testData.testNameHi,
+        total_marks: testData.totalMarks,
+        test_date: testData.testDate,
+        duration_in_minutes: testData.durationInMinutes,
+        is_live: testData.isLive,
+        sections: testData.sections
+      })
+      .eq('id', id)
+      .select()
+      .single();
 
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .update({
-          test_type: testData.testType,
-          test_name: testData.testName,
-          test_name_hi: testData.testNameHi,
-          total_marks: testData.totalMarks,
-          test_date: testData.testDate,
-          duration_in_minutes: testData.durationInMinutes,
-          is_live: testData.isLive,
-          sections: testData.sections
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating test:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Supabase connection error:', error);
+    if (error) {
       throw error;
     }
+
+    // Clear cache to force refresh
+    cacheService.clearCache();
+    
+    return data;
   },
 
-  // Toggle test live status
   async toggleTestStatus(id: string, isLive: boolean): Promise<boolean> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
+    await this.checkConnection();
+    
+    const { error } = await supabase
+      .from('tests')
+      .update({ is_live: isLive })
+      .eq('id', id);
 
-    try {
-      const { error } = await supabase
-        .from('tests')
-        .update({ is_live: isLive })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error toggling test status:', error);
-        throw error;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Supabase connection error:', error);
+    if (error) {
       throw error;
     }
+
+    // Clear cache to force refresh
+    cacheService.clearCache();
+    
+    return true;
   },
 
-  // Delete a test
   async deleteTest(id: string): Promise<boolean> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
+    await this.checkConnection();
+    
+    const { error } = await supabase
+      .from('tests')
+      .delete()
+      .eq('id', id);
 
-    try {
-      const { error } = await supabase
-        .from('tests')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting test:', error);
-        throw error;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Supabase connection error:', error);
+    if (error) {
       throw error;
     }
-  },
 
-  // Get test by ID
-  async getTestById(id: string): Promise<DatabaseTest | null> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching test:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Supabase connection error:', error);
-      throw error;
-    }
+    // Clear cache to force refresh
+    cacheService.clearCache();
+    
+    return true;
   }
 };
 
 // Test attempt management functions
 export const attemptService = {
-  // Get user's test attempts
-  async getUserAttempts(userId: string): Promise<DatabaseTestAttempt[]> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
+  // Save pending attempts locally when offline
+  savePendingAttempt: (attemptData: any, userId: string) => {
+    try {
+      const pending = JSON.parse(localStorage.getItem('pending_attempts') || '[]');
+      pending.push({ ...attemptData, userId, timestamp: Date.now() });
+      localStorage.setItem('pending_attempts', JSON.stringify(pending));
+    } catch (error) {
+      console.error('Failed to save pending attempt:', error);
     }
+  },
+
+  // Get pending attempts
+  getPendingAttempts: (): any[] => {
+    try {
+      return JSON.parse(localStorage.getItem('pending_attempts') || '[]');
+    } catch (error) {
+      return [];
+    }
+  },
+
+  // Clear pending attempts
+  clearPendingAttempts: () => {
+    localStorage.removeItem('pending_attempts');
+  },
+
+  // Sync pending attempts when back online
+  async syncPendingAttempts(): Promise<void> {
+    const pending = this.getPendingAttempts();
+    if (pending.length === 0) return;
 
     try {
-      const { data, error } = await supabase
-        .from('test_attempts')
-        .select('*')
-        .eq('user_id', userId)
-        .order('completed_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching user attempts:', error);
-        throw error;
+      await testService.checkConnection();
+      
+      for (const attempt of pending) {
+        await this.saveAttempt(attempt, attempt.userId);
       }
-
-      return data || [];
+      
+      this.clearPendingAttempts();
     } catch (error) {
-      console.error('Supabase connection error:', error);
+      console.error('Failed to sync pending attempts:', error);
       throw error;
     }
   },
 
-  // Save test attempt
-  async saveAttempt(attemptData: any, userId: string): Promise<DatabaseTestAttempt | null> {
-    if (!isSupabaseAvailable || !supabase) {
-      throw new Error('Supabase not available');
-    }
+  // Get user's test attempts
+  async getUserAttempts(userId: string): Promise<any[]> {
+    await testService.checkConnection();
+    
+    const { data, error } = await supabase
+      .from('test_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('completed_at', { ascending: false });
 
-    try {
-      const { data, error } = await supabase
-        .from('test_attempts')
-        .insert([{
-          user_id: userId,
-          test_id: attemptData.testId,
-          test_type: attemptData.testType,
-          test_name: attemptData.testName,
-          score: attemptData.score,
-          total_marks: attemptData.totalMarks,
-          percentage: attemptData.percentage,
-          duration: attemptData.duration,
-          section_wise_score: attemptData.sectionWiseScore,
-          user_answers: attemptData.userAnswers || []
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error saving attempt:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Supabase connection error:', error);
+    if (error) {
       throw error;
     }
+
+    return (data || []).map((attempt: DatabaseTestAttempt) => ({
+      id: attempt.id,
+      testId: attempt.test_id,
+      testType: attempt.test_type as 'navodaya' | 'sainik',
+      testName: attempt.test_name,
+      score: attempt.score,
+      totalMarks: attempt.total_marks,
+      percentage: attempt.percentage,
+      date: attempt.completed_at,
+      duration: attempt.duration,
+      sectionWiseScore: attempt.section_wise_score
+    }));
+  },
+
+  // Save test attempt (requires online connection)
+  async saveAttempt(attemptData: any, userId: string): Promise<DatabaseTestAttempt | null> {
+    await testService.checkConnection();
+    
+    const { data, error } = await supabase
+      .from('test_attempts')
+      .insert([{
+        user_id: userId,
+        test_id: attemptData.testId,
+        test_type: attemptData.testType,
+        test_name: attemptData.testName,
+        score: attemptData.score,
+        total_marks: attemptData.totalMarks,
+        percentage: attemptData.percentage,
+        duration: attemptData.duration,
+        section_wise_score: attemptData.sectionWiseScore,
+        user_answers: attemptData.userAnswers || []
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
   }
 };
 
@@ -429,4 +533,4 @@ export const authService = {
 };
 
 // Export the supabase client and availability status
-export { supabase, isSupabaseAvailable };
+export { supabase, isSupabaseAvailable, networkService, cacheService };

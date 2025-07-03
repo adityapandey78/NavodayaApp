@@ -1,38 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Trophy, Target, Clock, Home, RotateCcw } from 'lucide-react';
+import { Trophy, Target, Clock, Home, RotateCcw, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
+import { useToast } from '../contexts/ToastContext';
+import { networkService } from '../lib/supabase';
 
 const Results: React.FC = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string }>();
   const navigate = useNavigate();
   const { userAnswers, addTestAttempt, currentAttemptId } = useQuiz();
+  const { showWarning, showInfo } = useToast();
   const [results, setResults] = useState<any>(null);
   const [test, setTest] = useState<any>(null);
   const [attemptSaved, setAttemptSaved] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     const loadTestAndCalculateResults = async () => {
       try {
-        // Get test data
-        let availableTests = [];
+        // Get test data from cache first
+        let foundTest = null;
         
         try {
-          const savedTests = localStorage.getItem('admin-tests');
-          if (savedTests) {
-            const parsedTests = JSON.parse(savedTests);
-            if (Array.isArray(parsedTests) && parsedTests.length > 0) {
-              availableTests = parsedTests;
-            }
-          }
+          const cachedTests = JSON.parse(localStorage.getItem('cached_tests') || '[]');
+          foundTest = cachedTests.find((t: any) => t.id === testId && t.testType === testType);
         } catch (error) {
-          console.error('Error loading saved tests:', error);
+          console.error('Error loading cached tests:', error);
         }
         
-        if (availableTests.length === 0) {
+        // Fallback to default tests if not in cache
+        if (!foundTest) {
           try {
             const module = await import('../data/testData');
-            availableTests = module.availableTests;
+            const defaultTests = module.availableTests || [];
+            foundTest = defaultTests.find((t: any) => t.id === testId && t.testType === testType);
           } catch (error) {
             console.error('Error loading default tests:', error);
             navigate('/quiz-selection');
@@ -40,8 +41,6 @@ const Results: React.FC = () => {
           }
         }
 
-        const foundTest = availableTests.find((t: any) => t.id === testId && t.testType === testType);
-        
         if (!foundTest) {
           navigate('/quiz-selection');
           return;
@@ -103,8 +102,14 @@ const Results: React.FC = () => {
             sectionWiseScore
           };
 
-          addTestAttempt(attempt);
+          await addTestAttempt(attempt);
           setAttemptSaved(true);
+          
+          if (!isOnline) {
+            showWarning('Results saved locally. Will upload when internet is available.');
+          } else {
+            showInfo('Results saved successfully!');
+          }
         }
       } catch (error) {
         console.error('Error calculating results:', error);
@@ -113,7 +118,19 @@ const Results: React.FC = () => {
     };
 
     loadTestAndCalculateResults();
-  }, [testId, testType, userAnswers, navigate, addTestAttempt, currentAttemptId, attemptSaved]);
+
+    // Listen for online/offline events
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [testId, testType, userAnswers, navigate, addTestAttempt, currentAttemptId, attemptSaved, isOnline]);
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-400';
@@ -143,12 +160,32 @@ const Results: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Connection Status Banner */}
+        {!isOnline && (
+          <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-4">
+            <div className="flex items-center space-x-3">
+              <WifiOff size={24} className="text-yellow-300" />
+              <div>
+                <p className="font-bold text-yellow-200">Offline Mode</p>
+                <p className="text-yellow-300 text-sm">Results saved locally. Will upload when internet is available.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
           <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
             <Trophy size={48} className="text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-4">Test Results</h1>
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <h1 className="text-3xl font-bold text-white">Test Results</h1>
+            {isOnline ? (
+              <Wifi size={20} className="text-green-300" />
+            ) : (
+              <WifiOff size={20} className="text-red-300" />
+            )}
+          </div>
           <p className="text-white/80 text-lg">{test?.testName}</p>
         </div>
 

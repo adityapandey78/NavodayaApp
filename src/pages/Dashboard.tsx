@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Database, Settings } from 'lucide-react';
+import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Wifi, WifiOff, Upload, AlertCircle } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
-import { testService } from '../lib/supabase';
-import SupabaseSetup from '../components/SupabaseSetup';
+import { useToast } from '../contexts/ToastContext';
+import { networkService } from '../lib/supabase';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { testAttempts } = useQuiz();
+  const { testAttempts, hasPendingAttempts, syncPendingAttempts } = useQuiz();
+  const { showError, showInfo } = useToast();
   const [joke, setJoke] = useState('');
-  const [showSupabaseSetup, setShowSupabaseSetup] = useState(false);
-  const [databaseConnected, setDatabaseConnected] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const jokes = [
     "Test ka question paper dekhte hi laga... Teacher ne humse nahi, NASA se inspiration liya hai! 🚀📄",
@@ -29,21 +29,17 @@ const Dashboard: React.FC = () => {
     const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
     setJoke(randomJoke);
 
-    // Check database connection
-    const checkConnection = async () => {
-      try {
-        if (testService.isAvailable()) {
-          await testService.getAllTests();
-          setDatabaseConnected(true);
-        } else {
-          setDatabaseConnected(false);
-        }
-      } catch (error) {
-        setDatabaseConnected(false);
-      }
-    };
+    // Listen for online/offline events
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-    checkConnection();
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const totalAttempts = testAttempts.length;
@@ -53,25 +49,60 @@ const Dashboard: React.FC = () => {
 
   const recentAttempts = testAttempts.slice(-3).reverse();
 
+  const handleStartTest = () => {
+    if (!isOnline) {
+      showError('Internet connection required to start a test. Please connect and try again.');
+      return;
+    }
+    navigate('/quiz-selection');
+  };
+
+  const handleSyncPending = async () => {
+    if (!isOnline) {
+      showError('Internet connection required to upload results.');
+      return;
+    }
+    
+    try {
+      await syncPendingAttempts();
+    } catch (error) {
+      // Error handling is done in the context
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Database Status Banner */}
-        {!databaseConnected && (
+        {/* Connection Status Banner */}
+        {!isOnline && (
+          <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-4">
+            <div className="flex items-center space-x-3">
+              <WifiOff size={24} className="text-red-300" />
+              <div>
+                <p className="font-bold text-red-200">No Internet Connection</p>
+                <p className="text-red-300 text-sm">You can continue taking tests, but results will be saved locally until connection is restored.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Results Banner */}
+        {hasPendingAttempts && (
           <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Database size={24} className="text-yellow-300" />
+                <Upload size={24} className="text-yellow-300" />
                 <div>
-                  <p className="font-bold text-yellow-200">Running in Offline Mode</p>
-                  <p className="text-yellow-300 text-sm">Connect to Supabase to save your progress</p>
+                  <p className="font-bold text-yellow-200">Pending Results</p>
+                  <p className="text-yellow-300 text-sm">You have test results waiting to be uploaded to the server.</p>
                 </div>
               </div>
               <button
-                onClick={() => setShowSupabaseSetup(true)}
-                className="bg-yellow-500 hover:bg-yellow-600 text-yellow-900 px-4 py-2 rounded-lg font-medium transition-colors"
+                onClick={handleSyncPending}
+                disabled={!isOnline}
+                className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-500 text-yellow-900 disabled:text-gray-300 px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                Connect Database
+                {isOnline ? 'Upload Now' : 'No Internet'}
               </button>
             </div>
           </div>
@@ -83,12 +114,19 @@ const Dashboard: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold">Welcome back, Satyam!</h1>
               <p className="text-blue-100 mt-2 text-lg">Ready to ace your next test?</p>
-              {databaseConnected && (
-                <div className="flex items-center space-x-2 mt-2">
-                  <Database size={16} className="text-green-300" />
-                  <span className="text-green-200 text-sm font-medium">Database Connected</span>
-                </div>
-              )}
+              <div className="flex items-center space-x-2 mt-2">
+                {isOnline ? (
+                  <>
+                    <Wifi size={16} className="text-green-300" />
+                    <span className="text-green-200 text-sm font-medium">Online</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff size={16} className="text-red-300" />
+                    <span className="text-red-200 text-sm font-medium">Offline</span>
+                  </>
+                )}
+              </div>
             </div>
             <div className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center">
               <GraduationCap size={40} />
@@ -128,7 +166,7 @@ const Dashboard: React.FC = () => {
           <h2 className="text-xl font-bold text-white">Quick Actions</h2>
           
           <button
-            onClick={() => navigate('/quiz-selection')}
+            onClick={handleStartTest}
             className="w-full bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 flex items-center justify-between group"
           >
             <div className="flex items-center space-x-4">
@@ -137,10 +175,15 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="text-left">
                 <p className="font-bold text-white text-lg">Take New Test</p>
-                <p className="text-white/80">Start practicing now</p>
+                <p className="text-white/80">
+                  {isOnline ? 'Start practicing now' : 'Internet required to start'}
+                </p>
               </div>
             </div>
-            <div className="text-white text-2xl group-hover:translate-x-2 transition-transform">→</div>
+            <div className="flex items-center space-x-2">
+              {!isOnline && <AlertCircle size={20} className="text-red-300" />}
+              <div className="text-white text-2xl group-hover:translate-x-2 transition-transform">→</div>
+            </div>
           </button>
 
           <button
@@ -198,11 +241,6 @@ const Dashboard: React.FC = () => {
           <p className="text-white leading-relaxed">{joke}</p>
         </div>
       </div>
-
-      {/* Supabase Setup Modal */}
-      {showSupabaseSetup && (
-        <SupabaseSetup onClose={() => setShowSupabaseSetup(false)} />
-      )}
     </div>
   );
 };

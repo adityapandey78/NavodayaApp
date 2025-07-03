@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TestData, TestAttempt, UserAnswer } from '../types/quiz';
 import { useAuth } from './AuthContext';
-import { attemptService } from '../lib/supabase';
+import { useToast } from './ToastContext';
+import { attemptService, networkService } from '../lib/supabase';
 
 interface QuizContextType {
   currentTest: TestData | null;
@@ -15,6 +16,8 @@ interface QuizContextType {
   setCurrentAttemptId: (id: string | null) => void;
   clearUserAnswers: () => void;
   loadUserAttempts: () => Promise<void>;
+  syncPendingAttempts: () => Promise<void>;
+  hasPendingAttempts: boolean;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -29,75 +32,93 @@ export const useQuiz = () => {
 
 export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const { showError, showSuccess, showWarning, showInfo } = useToast();
   const [currentTest, setCurrentTest] = useState<TestData | null>(null);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasPendingAttempts, setHasPendingAttempts] = useState(false);
 
-  // Load user attempts from Supabase or localStorage
+  // Check for pending attempts
+  useEffect(() => {
+    const pending = attemptService.getPendingAttempts();
+    setHasPendingAttempts(pending.length > 0);
+  }, []);
+
+  // Load user attempts from Supabase
   const loadUserAttempts = async () => {
-    if (isLoading) return;
+    if (isLoading || !user) return;
     
     setIsLoading(true);
     try {
-      if (user) {
-        try {
-          const supabaseAttempts = await attemptService.getUserAttempts(user.id);
-          const formattedAttempts = supabaseAttempts.map(attempt => ({
-            id: attempt.id,
-            testId: attempt.test_id,
-            testType: attempt.test_type as 'navodaya' | 'sainik',
-            testName: attempt.test_name,
-            score: attempt.score,
-            totalMarks: attempt.total_marks,
-            percentage: attempt.percentage,
-            date: attempt.completed_at,
-            duration: attempt.duration,
-            sectionWiseScore: attempt.section_wise_score
-          }));
-          setTestAttempts(formattedAttempts);
-        } catch (error) {
-          console.error('Error loading user attempts from Supabase:', error);
-          loadLocalAttempts();
-        }
+      const supabaseAttempts = await attemptService.getUserAttempts(user.id);
+      setTestAttempts(supabaseAttempts);
+      showInfo('Test history loaded successfully');
+    } catch (error: any) {
+      console.error('Error loading user attempts:', error);
+      if (error.message.includes('internet') || error.message.includes('connection')) {
+        showWarning('Cannot load test history - please check your internet connection');
       } else {
-        loadLocalAttempts();
+        showError('Failed to load test history');
       }
+      setTestAttempts([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadLocalAttempts = () => {
-    const savedAttempts = localStorage.getItem('prep-with-satyam-attempts');
-    if (savedAttempts) {
-      try {
-        const parsedAttempts = JSON.parse(savedAttempts);
-        if (Array.isArray(parsedAttempts)) {
-          setTestAttempts(parsedAttempts);
-        }
-      } catch (error) {
-        console.error('Error parsing saved attempts:', error);
-        localStorage.removeItem('prep-with-satyam-attempts');
+  // Sync pending attempts when back online
+  const syncPendingAttempts = async () => {
+    try {
+      await attemptService.syncPendingAttempts();
+      setHasPendingAttempts(false);
+      showSuccess('Pending test results uploaded successfully!');
+      
+      // Reload attempts after sync
+      if (user) {
+        await loadUserAttempts();
+      }
+    } catch (error: any) {
+      console.error('Error syncing pending attempts:', error);
+      if (error.message.includes('internet') || error.message.includes('connection')) {
+        showError('Cannot upload results - please check your internet connection');
+      } else {
+        showError('Failed to upload pending results');
       }
     }
   };
 
-  // Load attempts only once when user changes
+  // Load attempts when user changes
   useEffect(() => {
-    loadUserAttempts();
+    if (user) {
+      loadUserAttempts();
+    } else {
+      setTestAttempts([]);
+    }
   }, [user?.id]);
 
-  // Save attempts to localStorage for guest users (debounced)
+  // Listen for online/offline events
   useEffect(() => {
-    if (testAttempts.length > 0 && !user) {
-      const timeoutId = setTimeout(() => {
-        localStorage.setItem('prep-with-satyam-attempts', JSON.stringify(testAttempts));
-      }, 500);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [testAttempts, user]);
+    const handleOnline = () => {
+      showInfo('Back online! Syncing data...');
+      if (hasPendingAttempts) {
+        syncPendingAttempts();
+      }
+    };
+
+    const handleOffline = () => {
+      showWarning('You are now offline. Quiz answers will be saved locally.');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [hasPendingAttempts]);
 
   const addUserAnswer = (answer: UserAnswer) => {
     setUserAnswers(prev => {
@@ -112,7 +133,45 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addTestAttempt = async (attempt: TestAttempt) => {
     if (user) {
       try {
-        const savedAttempt = await attemptService.saveAttempt({
+        // Try to save online first
+        if (networkService.isOnline()) {
+          const savedAttempt = await attemptService.saveAttempt({
+            testId: attempt.testId,
+            testType: attempt.testType,
+            testName: attempt.testName,
+            score: attempt.score,
+            totalMarks: attempt.totalMarks,
+            percentage: attempt.percentage,
+            duration: attempt.duration,
+            sectionWiseScore: attempt.sectionWiseScore,
+            userAnswers: userAnswers
+          }, user.id);
+
+          if (savedAttempt) {
+            const formattedAttempt = {
+              id: savedAttempt.id,
+              testId: savedAttempt.test_id,
+              testType: savedAttempt.test_type as 'navodaya' | 'sainik',
+              testName: savedAttempt.test_name,
+              score: savedAttempt.score,
+              totalMarks: savedAttempt.total_marks,
+              percentage: savedAttempt.percentage,
+              date: savedAttempt.completed_at,
+              duration: savedAttempt.duration,
+              sectionWiseScore: savedAttempt.section_wise_score
+            };
+
+            setTestAttempts(prev => [formattedAttempt, ...prev]);
+            showSuccess('Test results saved successfully!');
+          }
+        } else {
+          throw new Error('No internet connection');
+        }
+      } catch (error: any) {
+        console.error('Error saving attempt:', error);
+        
+        // Save to pending if offline or connection failed
+        attemptService.savePendingAttempt({
           testId: attempt.testId,
           testType: attempt.testType,
           testName: attempt.testName,
@@ -123,52 +182,23 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           sectionWiseScore: attempt.sectionWiseScore,
           userAnswers: userAnswers
         }, user.id);
-
-        if (savedAttempt) {
-          const formattedAttempt = {
-            id: savedAttempt.id,
-            testId: savedAttempt.test_id,
-            testType: savedAttempt.test_type as 'navodaya' | 'sainik',
-            testName: savedAttempt.test_name,
-            score: savedAttempt.score,
-            totalMarks: savedAttempt.total_marks,
-            percentage: savedAttempt.percentage,
-            date: savedAttempt.completed_at,
-            duration: savedAttempt.duration,
-            sectionWiseScore: savedAttempt.section_wise_score
-          };
-
-          setTestAttempts(prev => {
-            const existingIndex = prev.findIndex(a => a.id === formattedAttempt.id);
-            if (existingIndex >= 0) {
-              const newAttempts = [...prev];
-              newAttempts[existingIndex] = formattedAttempt;
-              return newAttempts;
-            } else {
-              return [...prev, formattedAttempt];
-            }
-          });
+        
+        setHasPendingAttempts(true);
+        
+        if (error.message.includes('internet') || error.message.includes('connection')) {
+          showWarning('Results saved locally. Will upload when internet is available.');
+        } else {
+          showError('Failed to save results online. Saved locally for later upload.');
         }
-      } catch (error) {
-        console.error('Error saving attempt to Supabase:', error);
-        addLocalAttempt(attempt);
+        
+        // Add to local state for immediate display
+        setTestAttempts(prev => [attempt, ...prev]);
       }
     } else {
-      addLocalAttempt(attempt);
+      // Guest user - save locally only
+      setTestAttempts(prev => [attempt, ...prev]);
+      showInfo('Results saved locally (guest mode)');
     }
-  };
-
-  const addLocalAttempt = (attempt: TestAttempt) => {
-    setTestAttempts(prev => {
-      const existingIndex = prev.findIndex(a => a.id === attempt.id);
-      if (existingIndex >= 0) {
-        const newAttempts = [...prev];
-        newAttempts[existingIndex] = attempt;
-        return newAttempts;
-      } else {
-        return [...prev, attempt];
-      }
-    });
   };
 
   const clearUserAnswers = () => {
@@ -187,7 +217,9 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentAttemptId,
       setCurrentAttemptId,
       clearUserAnswers,
-      loadUserAttempts
+      loadUserAttempts,
+      syncPendingAttempts,
+      hasPendingAttempts
     }}>
       {children}
     </QuizContext.Provider>

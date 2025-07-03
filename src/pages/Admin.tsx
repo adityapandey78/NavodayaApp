@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText, Database, AlertCircle } from 'lucide-react';
+import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText, Database, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { testService } from '../lib/supabase';
+import { testService, networkService } from '../lib/supabase';
 import { TestData, Question, Section } from '../types/quiz';
 
 const Admin: React.FC = () => {
@@ -16,128 +16,88 @@ const Admin: React.FC = () => {
   const [showTsUpload, setShowTsUpload] = useState(false);
   const [tsCode, setTsCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [databaseConnected, setDatabaseConnected] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  // Check database connection
+  // Check connection status
   useEffect(() => {
-    const checkConnection = async () => {
-      if (testService.isAvailable()) {
-        try {
-          await testService.getAllTests();
-          setDatabaseConnected(true);
-        } catch (error) {
-          console.error('Database connection failed:', error);
-          setDatabaseConnected(false);
-        }
-      } else {
-        setDatabaseConnected(false);
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (isLoggedIn) {
+        showInfo('Back online! Refreshing data...');
+        loadTests();
       }
     };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      showWarning('You are now offline. Admin functions require internet connection.');
+    };
 
-    if (isLoggedIn) {
-      checkConnection();
-    }
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [isLoggedIn]);
 
-  // Load tests from database or fallback to localStorage
-  useEffect(() => {
-    const loadTests = async () => {
-      if (!isLoggedIn) return;
+  // Load tests from Supabase (admin always requires online)
+  const loadTests = async () => {
+    if (!isLoggedIn) return;
+    
+    if (!isOnline) {
+      showError('Internet connection required for admin functions');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const supabaseTests = await testService.getAllTests();
       
-      setLoading(true);
+      const formattedTests = supabaseTests.map(test => ({
+        id: test.id,
+        testType: test.test_type,
+        testName: test.test_name,
+        testNameHi: test.test_name_hi,
+        totalMarks: test.total_marks,
+        testDate: test.test_date,
+        durationInMinutes: test.duration_in_minutes,
+        isLive: test.is_live,
+        sections: test.sections
+      }));
       
-      try {
-        if (databaseConnected) {
-          // Try to load from Supabase database
-          const supabaseTests = await testService.getAllTests();
-          
-          if (supabaseTests.length > 0) {
-            const formattedTests = supabaseTests.map(test => ({
-              id: test.id,
-              testType: test.test_type,
-              testName: test.test_name,
-              testNameHi: test.test_name_hi,
-              totalMarks: test.total_marks,
-              testDate: test.test_date,
-              durationInMinutes: test.duration_in_minutes,
-              isLive: test.is_live,
-              sections: test.sections
-            }));
-            setTests(formattedTests);
-            showInfo('Tests loaded from database');
-          } else {
-            // If no tests in database, load and save default tests
-            try {
-              const module = await import('../data/testData');
-              const defaultTests = module.availableTests;
-              
-              // Save each default test to database
-              const savedTests = [];
-              for (const test of defaultTests) {
-                const savedTest = await testService.createTest(test);
-                if (savedTest) {
-                  savedTests.push({
-                    id: savedTest.id,
-                    testType: savedTest.test_type,
-                    testName: savedTest.test_name,
-                    testNameHi: savedTest.test_name_hi,
-                    totalMarks: savedTest.total_marks,
-                    testDate: savedTest.test_date,
-                    durationInMinutes: savedTest.duration_in_minutes,
-                    isLive: savedTest.is_live,
-                    sections: savedTest.sections
-                  });
-                }
-              }
-              setTests(savedTests);
-              showSuccess('Default tests loaded and saved to database');
-            } catch (importError) {
-              console.error('Error loading default tests:', importError);
-              showError('Failed to load default tests');
-            }
-          }
-        } else {
-          // Fallback to localStorage if database is not connected
-          const savedTests = localStorage.getItem('admin-tests');
-          if (savedTests) {
-            try {
-              const parsedTests = JSON.parse(savedTests);
-              if (Array.isArray(parsedTests)) {
-                setTests(parsedTests);
-                showWarning('Using local storage. Database connection failed.');
-              }
-            } catch (parseError) {
-              console.error('Error parsing saved tests:', parseError);
-              showError('Failed to load tests from local storage');
-            }
-          } else {
-            // Load default tests to localStorage
-            try {
-              const module = await import('../data/testData');
-              const defaultTests = module.availableTests;
-              setTests(defaultTests);
-              localStorage.setItem('admin-tests', JSON.stringify(defaultTests));
-              showWarning('Using default tests. Database connection failed.');
-            } catch (importError) {
-              console.error('Error loading default tests:', importError);
-              showError('Failed to load tests');
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading tests:', error);
-        showError('Failed to load tests');
-        setTests([]);
-      } finally {
-        setLoading(false);
+      setTests(formattedTests);
+      showSuccess('Tests loaded from database');
+      
+    } catch (error: any) {
+      console.error('Error loading tests:', error);
+      if (error.message.includes('internet') || error.message.includes('connection')) {
+        showError('Internet connection required for admin functions');
+      } else {
+        showError('Failed to load tests from database');
       }
-    };
+      setTests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadTests();
-  }, [isLoggedIn, databaseConnected]);
+  useEffect(() => {
+    if (isLoggedIn && isOnline) {
+      loadTests();
+    }
+  }, [isLoggedIn, isOnline]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isOnline) {
+      showError('Internet connection required for admin login');
+      return;
+    }
+    
     if (credentials.username === 'admin' && credentials.password === 'admin123') {
       setIsLoggedIn(true);
       localStorage.setItem('admin-logged-in', 'true');
@@ -156,67 +116,64 @@ const Admin: React.FC = () => {
   };
 
   const toggleTestStatus = async (testId: string) => {
+    if (!isOnline) {
+      showError('Internet connection required for admin functions');
+      return;
+    }
+
     const test = tests.find(t => t.id === testId);
     if (!test) return;
 
     const newStatus = !test.isLive;
 
-    if (databaseConnected) {
-      try {
-        const success = await testService.toggleTestStatus(testId, newStatus);
-        if (success) {
-          setTests(prev => prev.map(t => 
-            t.id === testId ? { ...t, isLive: newStatus } : t
-          ));
-          showSuccess(`Test ${newStatus ? 'activated' : 'deactivated'} successfully`);
-          window.dispatchEvent(new CustomEvent('testsUpdated'));
-        } else {
-          showError('Failed to update test status in database');
-        }
-      } catch (error) {
-        console.error('Error toggling test status:', error);
-        showError('Database connection error');
+    try {
+      const success = await testService.toggleTestStatus(testId, newStatus);
+      if (success) {
+        setTests(prev => prev.map(t => 
+          t.id === testId ? { ...t, isLive: newStatus } : t
+        ));
+        showSuccess(`Test ${newStatus ? 'activated' : 'deactivated'} successfully`);
       }
-    } else {
-      // Fallback to localStorage
-      setTests(prev => prev.map(t => 
-        t.id === testId ? { ...t, isLive: newStatus } : t
-      ));
-      localStorage.setItem('admin-tests', JSON.stringify(tests.map(t => 
-        t.id === testId ? { ...t, isLive: newStatus } : t
-      )));
-      showSuccess(`Test ${newStatus ? 'activated' : 'deactivated'} locally`);
-      window.dispatchEvent(new CustomEvent('testsUpdated'));
+    } catch (error: any) {
+      console.error('Error toggling test status:', error);
+      if (error.message.includes('internet') || error.message.includes('connection')) {
+        showError('Internet connection required for this action');
+      } else {
+        showError('Failed to update test status');
+      }
     }
   };
 
   const deleteTest = async (testId: string) => {
+    if (!isOnline) {
+      showError('Internet connection required for admin functions');
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this test? This action cannot be undone.')) return;
 
-    if (databaseConnected) {
-      try {
-        const success = await testService.deleteTest(testId);
-        if (success) {
-          setTests(prev => prev.filter(t => t.id !== testId));
-          showSuccess('Test deleted successfully');
-          window.dispatchEvent(new CustomEvent('testsUpdated'));
-        } else {
-          showError('Failed to delete test from database');
-        }
-      } catch (error) {
-        console.error('Error deleting test:', error);
-        showError('Database connection error');
+    try {
+      const success = await testService.deleteTest(testId);
+      if (success) {
+        setTests(prev => prev.filter(t => t.id !== testId));
+        showSuccess('Test deleted successfully');
       }
-    } else {
-      // Fallback to localStorage
-      setTests(prev => prev.filter(t => t.id !== testId));
-      localStorage.setItem('admin-tests', JSON.stringify(tests.filter(t => t.id !== testId)));
-      showSuccess('Test deleted locally');
-      window.dispatchEvent(new CustomEvent('testsUpdated'));
+    } catch (error: any) {
+      console.error('Error deleting test:', error);
+      if (error.message.includes('internet') || error.message.includes('connection')) {
+        showError('Internet connection required for this action');
+      } else {
+        showError('Failed to delete test');
+      }
     }
   };
 
   const handleTsUpload = async () => {
+    if (!isOnline) {
+      showError('Internet connection required to create tests');
+      return;
+    }
+
     try {
       const cleanCode = tsCode.replace(/^export\s+/, '').trim();
       const func = new Function('return ' + cleanCode);
@@ -261,40 +218,33 @@ const Admin: React.FC = () => {
         total + section.questions.reduce((sectionTotal, question) => sectionTotal + question.marks, 0), 0
       );
 
-      if (databaseConnected) {
-        // Save to database
-        const result = await testService.createTest(newTest);
-        if (result) {
-          const formattedTest = {
-            id: result.id,
-            testType: result.test_type,
-            testName: result.test_name,
-            testNameHi: result.test_name_hi,
-            totalMarks: result.total_marks,
-            testDate: result.test_date,
-            durationInMinutes: result.duration_in_minutes,
-            isLive: result.is_live,
-            sections: result.sections
-          };
-          setTests(prev => [...prev, formattedTest]);
-          showSuccess(`Test "${newTest.testName}" created successfully in database with ${newTest.totalMarks} marks!`);
-          window.dispatchEvent(new CustomEvent('testsUpdated'));
-        } else {
-          throw new Error('Failed to save to database');
-        }
-      } else {
-        // Save to localStorage
-        setTests(prev => [...prev, newTest]);
-        localStorage.setItem('admin-tests', JSON.stringify([...tests, newTest]));
-        showSuccess(`Test "${newTest.testName}" created locally with ${newTest.totalMarks} marks!`);
-        window.dispatchEvent(new CustomEvent('testsUpdated'));
+      const result = await testService.createTest(newTest);
+      if (result) {
+        const formattedTest = {
+          id: result.id,
+          testType: result.test_type,
+          testName: result.test_name,
+          testNameHi: result.test_name_hi,
+          totalMarks: result.total_marks,
+          testDate: result.test_date,
+          durationInMinutes: result.duration_in_minutes,
+          isLive: result.is_live,
+          sections: result.sections
+        };
+        setTests(prev => [...prev, formattedTest]);
+        showSuccess(`Test "${newTest.testName}" created successfully with ${newTest.totalMarks} marks!`);
       }
 
       setTsCode('');
       setShowTsUpload(false);
 
-    } catch (error) {
-      showError(`Error creating test: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (error: any) {
+      console.error('Error creating test:', error);
+      if (error.message.includes('internet') || error.message.includes('connection')) {
+        showError('Internet connection required to create tests');
+      } else {
+        showError(`Error creating test: ${error.message}`);
+      }
     }
   };
 
@@ -336,6 +286,19 @@ const Admin: React.FC = () => {
             <p className="text-white/80 mt-2">
               Enter your credentials to access the admin panel
             </p>
+            <div className="flex items-center justify-center space-x-2 mt-3">
+              {isOnline ? (
+                <>
+                  <Wifi size={16} className="text-green-300" />
+                  <span className="text-green-200 text-sm">Online</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff size={16} className="text-red-300" />
+                  <span className="text-red-200 text-sm">Offline - Admin requires internet</span>
+                </>
+              )}
+            </div>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -349,6 +312,7 @@ const Admin: React.FC = () => {
                 onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
                 required
+                disabled={!isOnline}
               />
             </div>
 
@@ -362,14 +326,16 @@ const Admin: React.FC = () => {
                 onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
                 required
+                disabled={!isOnline}
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300"
+              disabled={!isOnline}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-500 disabled:to-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300"
             >
-              Login
+              {isOnline ? 'Login' : 'Internet Required'}
             </button>
           </form>
 
@@ -395,10 +361,17 @@ const Admin: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <Database size={20} className={databaseConnected ? "text-green-400" : "text-red-400"} />
-              <span className="text-white font-medium">
-                {databaseConnected ? 'Database Connected' : 'Local Mode'}
-              </span>
+              {isOnline ? (
+                <>
+                  <Wifi size={20} className="text-green-400" />
+                  <span className="text-white font-medium">Online</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff size={20} className="text-red-400" />
+                  <span className="text-white font-medium">Offline</span>
+                </>
+              )}
             </div>
             <button
               onClick={handleLogout}
@@ -409,6 +382,19 @@ const Admin: React.FC = () => {
           </div>
         </div>
 
+        {/* Offline Warning */}
+        {!isOnline && (
+          <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-4">
+            <div className="flex items-center space-x-3">
+              <AlertCircle size={24} className="text-red-300" />
+              <div>
+                <p className="font-bold text-red-200">No Internet Connection</p>
+                <p className="text-red-300 text-sm">Admin functions require internet connection. Please connect and refresh.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Test Management */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-4">
@@ -416,7 +402,8 @@ const Admin: React.FC = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => setShowTsUpload(true)}
-                className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
+                disabled={!isOnline}
+                className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
               >
                 <FileText size={20} />
                 <span>Upload Test</span>
@@ -450,11 +437,12 @@ const Admin: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => toggleTestStatus(test.id)}
+                      disabled={!isOnline}
                       className={`p-2 rounded-lg transition-colors ${
                         test.isLive 
                           ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30' 
                           : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
-                      }`}
+                      } disabled:opacity-50`}
                       title={test.isLive ? 'Hide Test' : 'Show Test'}
                     >
                       {test.isLive ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -462,7 +450,8 @@ const Admin: React.FC = () => {
                     
                     <button
                       onClick={() => deleteTest(test.id)}
-                      className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors"
+                      disabled={!isOnline}
+                      className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
                       title="Delete Test"
                     >
                       <Trash2 size={16} />
@@ -473,8 +462,12 @@ const Admin: React.FC = () => {
               
               {tests.length === 0 && !loading && (
                 <div className="text-center py-8">
-                  <p className="text-white/80">No tests found</p>
-                  <p className="text-white/60 text-sm mt-2">Upload a test to get started</p>
+                  <p className="text-white/80">
+                    {isOnline ? 'No tests found' : 'Connect to internet to load tests'}
+                  </p>
+                  {isOnline && (
+                    <p className="text-white/60 text-sm mt-2">Upload a test to get started</p>
+                  )}
                 </div>
               )}
             </div>
@@ -487,7 +480,7 @@ const Admin: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">
-                  Upload Test {databaseConnected ? 'to Database' : 'Locally'}
+                  Upload Test to Database
                 </h2>
                 <button
                   onClick={() => {
@@ -532,11 +525,11 @@ const Admin: React.FC = () => {
                   </button>
                   <button
                     onClick={handleTsUpload}
-                    disabled={!tsCode.trim()}
+                    disabled={!tsCode.trim() || !isOnline}
                     className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300"
                   >
                     <Upload size={20} />
-                    <span>{databaseConnected ? 'Save to Database' : 'Save Locally'}</span>
+                    <span>{isOnline ? 'Save to Database' : 'Internet Required'}</span>
                   </button>
                 </div>
               </div>
