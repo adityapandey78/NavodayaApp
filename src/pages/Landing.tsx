@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GraduationCap, ArrowRight, Star, Sparkles } from 'lucide-react';
+import { GraduationCap, ArrowRight, Star, Sparkles, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-500 to-cyan-400 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -52,14 +54,26 @@ const Landing: React.FC = () => {
             </div>
           </div>
 
-          {/* CTA Button */}
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:from-pink-600 hover:via-purple-600 hover:to-indigo-600 text-white font-bold py-4 px-8 rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-3"
-          >
-            <span className="text-lg">Start Your Journey</span>
-            <ArrowRight size={24} />
-          </button>
+          {/* CTA Buttons */}
+          <div className="space-y-4">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:from-pink-600 hover:via-purple-600 hover:to-indigo-600 text-white font-bold py-4 px-8 rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-3"
+            >
+              <span className="text-lg">Start Your Journey</span>
+              <ArrowRight size={24} />
+            </button>
+
+            {!user && (
+              <button
+                onClick={() => navigate('/auth')}
+                className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 px-6 rounded-xl border border-white/20 transition-all duration-300 flex items-center justify-center space-x-2"
+              >
+                <User size={20} />
+                <span>Sign In / Sign Up</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

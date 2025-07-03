@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TestData, TestAttempt, UserAnswer } from '../types/quiz';
+import { useAuth } from './AuthContext';
+import { attemptService } from '../lib/supabase';
 
 interface QuizContextType {
   currentTest: TestData | null;
@@ -14,6 +16,7 @@ interface QuizContextType {
   language: 'en' | 'hi';
   setLanguage: (lang: 'en' | 'hi') => void;
   clearUserAnswers: () => void;
+  loadUserAttempts: () => Promise<void>;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -27,18 +30,47 @@ export const useQuiz = () => {
 };
 
 export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [currentTest, setCurrentTest] = useState<TestData | null>(null);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
 
-  useEffect(() => {
+  // Load user attempts from Supabase or localStorage
+  const loadUserAttempts = async () => {
+    if (user) {
+      try {
+        const supabaseAttempts = await attemptService.getUserAttempts(user.id);
+        const formattedAttempts = supabaseAttempts.map(attempt => ({
+          id: attempt.id,
+          testId: attempt.test_id,
+          testType: attempt.test_type as 'navodaya' | 'sainik',
+          testName: attempt.test_name,
+          score: attempt.score,
+          totalMarks: attempt.total_marks,
+          percentage: attempt.percentage,
+          date: attempt.completed_at,
+          duration: attempt.duration,
+          sectionWiseScore: attempt.section_wise_score
+        }));
+        setTestAttempts(formattedAttempts);
+      } catch (error) {
+        console.error('Error loading user attempts from Supabase:', error);
+        // Fallback to localStorage
+        loadLocalAttempts();
+      }
+    } else {
+      // Load from localStorage for guest users
+      loadLocalAttempts();
+    }
+  };
+
+  const loadLocalAttempts = () => {
     const savedAttempts = localStorage.getItem('prep-with-satyam-attempts');
     if (savedAttempts) {
       try {
         const parsedAttempts = JSON.parse(savedAttempts);
-        // Ensure we have valid data structure
         if (Array.isArray(parsedAttempts)) {
           setTestAttempts(parsedAttempts);
         }
@@ -47,18 +79,23 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('prep-with-satyam-attempts');
       }
     }
+  };
+
+  useEffect(() => {
+    loadUserAttempts();
 
     const savedLanguage = localStorage.getItem('prep-with-satyam-language');
     if (savedLanguage) {
       setLanguage(savedLanguage as 'en' | 'hi');
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    if (testAttempts.length > 0) {
+    // Save to localStorage for guest users or as backup
+    if (testAttempts.length > 0 && !user) {
       localStorage.setItem('prep-with-satyam-attempts', JSON.stringify(testAttempts));
     }
-  }, [testAttempts]);
+  }, [testAttempts, user]);
 
   useEffect(() => {
     localStorage.setItem('prep-with-satyam-language', language);
@@ -74,17 +111,66 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const addTestAttempt = (attempt: TestAttempt) => {
-    // Check if this attempt already exists to prevent duplicates
+  const addTestAttempt = async (attempt: TestAttempt) => {
+    if (user) {
+      try {
+        // Save to Supabase
+        const savedAttempt = await attemptService.saveAttempt({
+          testId: attempt.testId,
+          testType: attempt.testType,
+          testName: attempt.testName,
+          score: attempt.score,
+          totalMarks: attempt.totalMarks,
+          percentage: attempt.percentage,
+          duration: attempt.duration,
+          sectionWiseScore: attempt.sectionWiseScore,
+          userAnswers: userAnswers
+        }, user.id);
+
+        if (savedAttempt) {
+          const formattedAttempt = {
+            id: savedAttempt.id,
+            testId: savedAttempt.test_id,
+            testType: savedAttempt.test_type as 'navodaya' | 'sainik',
+            testName: savedAttempt.test_name,
+            score: savedAttempt.score,
+            totalMarks: savedAttempt.total_marks,
+            percentage: savedAttempt.percentage,
+            date: savedAttempt.completed_at,
+            duration: savedAttempt.duration,
+            sectionWiseScore: savedAttempt.section_wise_score
+          };
+
+          setTestAttempts(prev => {
+            const existingIndex = prev.findIndex(a => a.id === formattedAttempt.id);
+            if (existingIndex >= 0) {
+              const newAttempts = [...prev];
+              newAttempts[existingIndex] = formattedAttempt;
+              return newAttempts;
+            } else {
+              return [...prev, formattedAttempt];
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error saving attempt to Supabase:', error);
+        // Fallback to localStorage
+        addLocalAttempt(attempt);
+      }
+    } else {
+      // Save to localStorage for guest users
+      addLocalAttempt(attempt);
+    }
+  };
+
+  const addLocalAttempt = (attempt: TestAttempt) => {
     setTestAttempts(prev => {
       const existingIndex = prev.findIndex(a => a.id === attempt.id);
       if (existingIndex >= 0) {
-        // Update existing attempt
         const newAttempts = [...prev];
         newAttempts[existingIndex] = attempt;
         return newAttempts;
       } else {
-        // Add new attempt
         return [...prev, attempt];
       }
     });
@@ -107,7 +193,8 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentAttemptId,
       language,
       setLanguage,
-      clearUserAnswers
+      clearUserAnswers,
+      loadUserAttempts
     }}>
       {children}
     </QuizContext.Provider>

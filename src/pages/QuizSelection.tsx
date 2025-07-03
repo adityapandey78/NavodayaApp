@@ -2,49 +2,78 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Shield, Users, Clock } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
+import { useAuth } from '../contexts/AuthContext';
+import { testService } from '../lib/supabase';
 
 const QuizSelection: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useQuiz();
+  const { user } = useAuth();
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get tests from localStorage if they exist, otherwise use default tests
   const loadTests = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // First try to get admin tests
-      const savedTests = localStorage.getItem('admin-tests');
-      if (savedTests) {
-        try {
-          const parsedTests = JSON.parse(savedTests);
-          if (Array.isArray(parsedTests) && parsedTests.length > 0) {
-            setAvailableTests(parsedTests);
-            setIsLoading(false);
-            return;
+      // Try to load from Supabase first
+      const supabaseTests = await testService.getLiveTests();
+      
+      if (supabaseTests.length > 0) {
+        // Convert Supabase format to app format
+        const formattedTests = supabaseTests.map(test => ({
+          id: test.id,
+          testType: test.test_type,
+          testName: test.test_name,
+          testNameHi: test.test_name_hi,
+          totalMarks: test.total_marks,
+          testDate: test.test_date,
+          durationInMinutes: test.duration_in_minutes,
+          isLive: test.is_live,
+          sections: test.sections
+        }));
+        setAvailableTests(formattedTests);
+      } else {
+        // Fallback to localStorage
+        const savedTests = localStorage.getItem('admin-tests');
+        if (savedTests) {
+          try {
+            const parsedTests = JSON.parse(savedTests);
+            if (Array.isArray(parsedTests)) {
+              setAvailableTests(parsedTests.filter(test => test.isLive));
+            }
+          } catch (parseError) {
+            console.error('Error parsing saved tests:', parseError);
           }
-        } catch (parseError) {
-          console.error('Error parsing saved tests:', parseError);
         }
-      }
-      
-      // Fallback to default tests
-      const module = await import('../data/testData');
-      const defaultTests = module.availableTests || [];
-      setAvailableTests(defaultTests);
-      
-      // Save default tests to localStorage for future use
-      if (defaultTests.length > 0) {
-        localStorage.setItem('admin-tests', JSON.stringify(defaultTests));
+        
+        // If still no tests, load defaults
+        if (availableTests.length === 0) {
+          const module = await import('../data/testData');
+          const defaultTests = module.availableTests || [];
+          setAvailableTests(defaultTests.filter(test => test.isLive));
+        }
       }
       
     } catch (error) {
       console.error('Error loading tests:', error);
       setError('Failed to load tests');
-      setAvailableTests([]);
+      
+      // Try localStorage as final fallback
+      try {
+        const savedTests = localStorage.getItem('admin-tests');
+        if (savedTests) {
+          const parsedTests = JSON.parse(savedTests);
+          if (Array.isArray(parsedTests)) {
+            setAvailableTests(parsedTests.filter(test => test.isLive));
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Fallback error:', fallbackError);
+        setAvailableTests([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -53,14 +82,9 @@ const QuizSelection: React.FC = () => {
   useEffect(() => {
     loadTests();
 
-    // Listen for storage changes to update tests in real-time
-    const handleStorageChange = () => {
-      loadTests();
-    };
-
-    const handleTestsUpdated = () => {
-      loadTests();
-    };
+    // Listen for storage changes and custom events
+    const handleStorageChange = () => loadTests();
+    const handleTestsUpdated = () => loadTests();
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('testsUpdated', handleTestsUpdated);
@@ -71,8 +95,8 @@ const QuizSelection: React.FC = () => {
     };
   }, []);
 
-  const navodayaTests = availableTests.filter(test => test.testType === 'navodaya' && test.isLive);
-  const sainikTests = availableTests.filter(test => test.testType === 'sainik' && test.isLive);
+  const navodayaTests = availableTests.filter(test => test.testType === 'navodaya');
+  const sainikTests = availableTests.filter(test => test.testType === 'sainik');
 
   const startTest = (testType: string, testId: string) => {
     navigate(`/quiz/${testType}/${testId}`);

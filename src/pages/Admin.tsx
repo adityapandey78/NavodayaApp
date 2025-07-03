@@ -1,54 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText } from 'lucide-react';
+import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText, Database } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { testService } from '../lib/supabase';
 import { TestData, Question, Section } from '../types/quiz';
 
 const Admin: React.FC = () => {
+  const { user } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [credentials, setCredentials] = useState({ username: '', password: '' });
-  const [tests, setTests] = useState<TestData[]>([]);
-  const [selectedTest, setSelectedTest] = useState<TestData | null>(null);
+  const [tests, setTests] = useState<any[]>([]);
+  const [selectedTest, setSelectedTest] = useState<any | null>(null);
   const [showAddTest, setShowAddTest] = useState(false);
-  const [editingTest, setEditingTest] = useState<TestData | null>(null);
+  const [editingTest, setEditingTest] = useState<any | null>(null);
   const [showTsUpload, setShowTsUpload] = useState(false);
   const [tsCode, setTsCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [useDatabase, setUseDatabase] = useState(true);
 
-  // Load tests from localStorage on component mount
+  // Load tests from Supabase or localStorage
   useEffect(() => {
-    const loadTests = () => {
+    const loadTests = async () => {
+      setLoading(true);
       try {
-        const savedTests = localStorage.getItem('admin-tests');
-        if (savedTests) {
-          const parsedTests = JSON.parse(savedTests);
-          if (Array.isArray(parsedTests)) {
-            setTests(parsedTests);
-            return;
+        if (useDatabase && user) {
+          // Load from Supabase
+          const supabaseTests = await testService.getAllTests();
+          const formattedTests = supabaseTests.map(test => ({
+            id: test.id,
+            testType: test.test_type,
+            testName: test.test_name,
+            testNameHi: test.test_name_hi,
+            totalMarks: test.total_marks,
+            testDate: test.test_date,
+            durationInMinutes: test.duration_in_minutes,
+            isLive: test.is_live,
+            sections: test.sections
+          }));
+          setTests(formattedTests);
+        } else {
+          // Load from localStorage (fallback)
+          const savedTests = localStorage.getItem('admin-tests');
+          if (savedTests) {
+            const parsedTests = JSON.parse(savedTests);
+            setTests(Array.isArray(parsedTests) ? parsedTests : []);
+          } else {
+            // Load default tests
+            const module = await import('../data/testData');
+            setTests(module.availableTests);
+            localStorage.setItem('admin-tests', JSON.stringify(module.availableTests));
           }
         }
       } catch (error) {
         console.error('Error loading tests:', error);
-      }
-      
-      // Load default tests if no saved tests
-      import('../data/testData').then(module => {
-        setTests(module.availableTests);
-        localStorage.setItem('admin-tests', JSON.stringify(module.availableTests));
-      }).catch(error => {
-        console.error('Error loading default tests:', error);
         setTests([]);
-      });
+      } finally {
+        setLoading(false);
+      }
     };
 
-    loadTests();
-  }, []);
-
-  // Save tests to localStorage whenever tests change
-  useEffect(() => {
-    if (tests.length > 0) {
-      localStorage.setItem('admin-tests', JSON.stringify(tests));
-      // Dispatch custom event to notify other components
-      window.dispatchEvent(new CustomEvent('testsUpdated'));
+    if (isLoggedIn) {
+      loadTests();
     }
-  }, [tests]);
+  }, [isLoggedIn, useDatabase, user]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,97 +72,119 @@ const Admin: React.FC = () => {
     }
   };
 
-  const toggleTestStatus = (testId: string) => {
-    setTests(prev => prev.map(test => 
-      test.id === testId ? { ...test, isLive: !test.isLive } : test
-    ));
-  };
+  const toggleTestStatus = async (testId: string) => {
+    const test = tests.find(t => t.id === testId);
+    if (!test) return;
 
-  const deleteTest = (testId: string) => {
-    if (confirm('Are you sure you want to delete this test?')) {
-      setTests(prev => prev.filter(test => test.id !== testId));
-    }
-  };
+    const newStatus = !test.isLive;
 
-  const clearAllData = () => {
-    if (confirm('Are you sure you want to clear ALL data? This will remove all tests, user data, and settings. This action cannot be undone.')) {
-      localStorage.clear();
-      setTests([]);
-      alert('All data has been cleared successfully.');
-      window.location.reload();
-    }
-  };
-
-  const createNewTest = (): TestData => ({
-    id: `test-${Date.now()}`,
-    testType: 'navodaya',
-    testName: 'New Test',
-    testNameHi: 'नया टेस्ट',
-    totalMarks: 0,
-    testDate: new Date().toISOString().split('T')[0],
-    durationInMinutes: 60,
-    isLive: false,
-    sections: [
-      {
-        name: 'Section 1',
-        nameHi: 'भाग 1',
-        questions: [
-          {
-            id: 'q1',
-            question: 'Sample question?',
-            questionHi: 'नमूना प्रश्न?',
-            options: ['Option A', 'Option B', 'Option C', 'Option D'],
-            optionsHi: ['विकल्प A', 'विकल्प B', 'विकल्प C', 'विकल्प D'],
-            correctAnswer: 'Option A',
-            marks: 2
-          }
-        ]
+    if (useDatabase && user) {
+      const success = await testService.toggleTestStatus(testId, newStatus);
+      if (success) {
+        setTests(prev => prev.map(t => 
+          t.id === testId ? { ...t, isLive: newStatus } : t
+        ));
+      } else {
+        alert('Failed to update test status in database');
       }
-    ]
-  });
-
-  const handleAddTest = () => {
-    const newTest = createNewTest();
-    setEditingTest(newTest);
-    setShowAddTest(true);
+    } else {
+      setTests(prev => prev.map(t => 
+        t.id === testId ? { ...t, isLive: newStatus } : t
+      ));
+      localStorage.setItem('admin-tests', JSON.stringify(tests.map(t => 
+        t.id === testId ? { ...t, isLive: newStatus } : t
+      )));
+    }
   };
 
-  const handleEditTest = (test: TestData) => {
-    setEditingTest({ ...test });
-    setShowAddTest(true);
+  const deleteTest = async (testId: string) => {
+    if (!confirm('Are you sure you want to delete this test?')) return;
+
+    if (useDatabase && user) {
+      const success = await testService.deleteTest(testId);
+      if (success) {
+        setTests(prev => prev.filter(t => t.id !== testId));
+      } else {
+        alert('Failed to delete test from database');
+      }
+    } else {
+      setTests(prev => prev.filter(t => t.id !== testId));
+      localStorage.setItem('admin-tests', JSON.stringify(tests.filter(t => t.id !== testId)));
+    }
   };
 
-  const handleSaveTest = () => {
+  const handleSaveTest = async () => {
     if (!editingTest) return;
 
     // Calculate total marks
-    const totalMarks = editingTest.sections.reduce((total, section) => 
-      total + section.questions.reduce((sectionTotal, question) => sectionTotal + question.marks, 0), 0
+    const totalMarks = editingTest.sections.reduce((total: number, section: any) => 
+      total + section.questions.reduce((sectionTotal: number, question: any) => sectionTotal + question.marks, 0), 0
     );
 
     const updatedTest = { ...editingTest, totalMarks };
 
-    setTests(prev => {
-      const existingIndex = prev.findIndex(t => t.id === updatedTest.id);
-      if (existingIndex >= 0) {
-        const newTests = [...prev];
-        newTests[existingIndex] = updatedTest;
-        return newTests;
+    if (useDatabase && user) {
+      // Save to Supabase
+      let result;
+      const existingTest = tests.find(t => t.id === updatedTest.id);
+      
+      if (existingTest) {
+        result = await testService.updateTest(updatedTest.id, updatedTest);
       } else {
-        return [...prev, updatedTest];
+        result = await testService.createTest(updatedTest);
       }
-    });
+
+      if (result) {
+        const formattedTest = {
+          id: result.id,
+          testType: result.test_type,
+          testName: result.test_name,
+          testNameHi: result.test_name_hi,
+          totalMarks: result.total_marks,
+          testDate: result.test_date,
+          durationInMinutes: result.duration_in_minutes,
+          isLive: result.is_live,
+          sections: result.sections
+        };
+
+        setTests(prev => {
+          const existingIndex = prev.findIndex(t => t.id === formattedTest.id);
+          if (existingIndex >= 0) {
+            const newTests = [...prev];
+            newTests[existingIndex] = formattedTest;
+            return newTests;
+          } else {
+            return [...prev, formattedTest];
+          }
+        });
+
+        alert('Test saved to database successfully!');
+      } else {
+        alert('Failed to save test to database');
+        return;
+      }
+    } else {
+      // Save to localStorage
+      setTests(prev => {
+        const existingIndex = prev.findIndex(t => t.id === updatedTest.id);
+        if (existingIndex >= 0) {
+          const newTests = [...prev];
+          newTests[existingIndex] = updatedTest;
+          return newTests;
+        } else {
+          return [...prev, updatedTest];
+        }
+      });
+      localStorage.setItem('admin-tests', JSON.stringify(tests));
+    }
 
     setShowAddTest(false);
     setEditingTest(null);
   };
 
-  const handleTsUpload = () => {
+  const handleTsUpload = async () => {
     try {
-      // Remove export statement and evaluate the code
       const cleanCode = tsCode.replace(/^export\s+/, '').trim();
-      
-      // Create a function to safely evaluate the code
       const func = new Function('return ' + cleanCode);
       const testData = func();
       
@@ -157,7 +192,6 @@ const Admin: React.FC = () => {
         throw new Error('Invalid test data format');
       }
 
-      // Validate required fields
       const requiredFields = ['testType', 'testName', 'durationInMinutes', 'sections'];
       for (const field of requiredFields) {
         if (!testData[field]) {
@@ -165,13 +199,12 @@ const Admin: React.FC = () => {
         }
       }
 
-      // Generate ID and calculate total marks
-      const newTest: TestData = {
+      const newTest = {
         id: testData.id || `test-${Date.now()}`,
         testType: testData.testType,
         testName: testData.testName,
         testNameHi: testData.testNameHi || testData.testName,
-        totalMarks: 0, // Will be calculated below
+        totalMarks: 0,
         testDate: testData.testDate || new Date().toISOString().split('T')[0],
         durationInMinutes: testData.durationInMinutes,
         isLive: testData.isLive || false,
@@ -184,104 +217,49 @@ const Admin: React.FC = () => {
             questionHi: q.questionHi || q.question,
             options: q.options,
             optionsHi: q.optionsHi || q.options,
-            correctAnswer: q.correctAnswer || q.answer, // Support both formats
+            correctAnswer: q.correctAnswer || q.answer,
             marks: q.marks || 2
           }))
         }))
       };
 
-      // Calculate total marks
       newTest.totalMarks = newTest.sections.reduce((total, section) => 
         total + section.questions.reduce((sectionTotal, question) => sectionTotal + question.marks, 0), 0
       );
 
-      // Add to tests
-      setTests(prev => [...prev, newTest]);
+      if (useDatabase && user) {
+        const result = await testService.createTest(newTest);
+        if (result) {
+          const formattedTest = {
+            id: result.id,
+            testType: result.test_type,
+            testName: result.test_name,
+            testNameHi: result.test_name_hi,
+            totalMarks: result.total_marks,
+            testDate: result.test_date,
+            durationInMinutes: result.duration_in_minutes,
+            isLive: result.is_live,
+            sections: result.sections
+          };
+          setTests(prev => [...prev, formattedTest]);
+          alert(`Test "${newTest.testName}" created in database with ${newTest.totalMarks} marks!`);
+        } else {
+          alert('Failed to save test to database');
+          return;
+        }
+      } else {
+        setTests(prev => [...prev, newTest]);
+        localStorage.setItem('admin-tests', JSON.stringify([...tests, newTest]));
+        alert(`Test "${newTest.testName}" created locally with ${newTest.totalMarks} marks!`);
+      }
+
       setTsCode('');
       setShowTsUpload(false);
-      alert(`Test "${newTest.testName}" has been successfully created with ${newTest.totalMarks} marks!`);
+      window.dispatchEvent(new CustomEvent('testsUpdated'));
 
     } catch (error) {
       alert(`Error parsing test data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  };
-
-  const addSection = () => {
-    if (!editingTest) return;
-    
-    const newSection: Section = {
-      name: `Section ${editingTest.sections.length + 1}`,
-      nameHi: `भाग ${editingTest.sections.length + 1}`,
-      questions: []
-    };
-
-    setEditingTest(prev => prev ? {
-      ...prev,
-      sections: [...prev.sections, newSection]
-    } : null);
-  };
-
-  const addQuestion = (sectionIndex: number) => {
-    if (!editingTest) return;
-
-    const newQuestion: Question = {
-      id: `q${Date.now()}`,
-      question: 'New question?',
-      questionHi: 'नया प्रश्न?',
-      options: ['Option A', 'Option B', 'Option C', 'Option D'],
-      optionsHi: ['विकल्प A', 'विकल्प B', 'विकल्प C', 'विकल्प D'],
-      correctAnswer: 'Option A',
-      marks: 2
-    };
-
-    setEditingTest(prev => {
-      if (!prev) return null;
-      const newSections = [...prev.sections];
-      newSections[sectionIndex] = {
-        ...newSections[sectionIndex],
-        questions: [...newSections[sectionIndex].questions, newQuestion]
-      };
-      return { ...prev, sections: newSections };
-    });
-  };
-
-  const updateQuestion = (sectionIndex: number, questionIndex: number, field: string, value: any) => {
-    if (!editingTest) return;
-
-    setEditingTest(prev => {
-      if (!prev) return null;
-      const newSections = [...prev.sections];
-      const newQuestions = [...newSections[sectionIndex].questions];
-      newQuestions[questionIndex] = { ...newQuestions[questionIndex], [field]: value };
-      newSections[sectionIndex] = { ...newSections[sectionIndex], questions: newQuestions };
-      return { ...prev, sections: newSections };
-    });
-  };
-
-  const removeQuestion = (sectionIndex: number, questionIndex: number) => {
-    if (!editingTest) return;
-
-    setEditingTest(prev => {
-      if (!prev) return null;
-      const newSections = [...prev.sections];
-      newSections[sectionIndex] = {
-        ...newSections[sectionIndex],
-        questions: newSections[sectionIndex].questions.filter((_, i) => i !== questionIndex)
-      };
-      return { ...prev, sections: newSections };
-    });
-  };
-
-  const removeSection = (sectionIndex: number) => {
-    if (!editingTest) return;
-
-    setEditingTest(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        sections: prev.sections.filter((_, i) => i !== sectionIndex)
-      };
-    });
   };
 
   const sampleTestData = `const testData = {
@@ -336,55 +314,55 @@ const Admin: React.FC = () => {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg">
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-500 to-cyan-400 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield size={32} className="text-white" />
+            <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield size={40} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Login</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
+            <h1 className="text-2xl font-bold text-white">Admin Login</h1>
+            <p className="text-white/80 mt-2">
               Enter your credentials to access the admin panel
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-white/80 mb-1">
                 Username
               </label>
               <input
                 type="text"
                 value={credentials.username}
                 onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-white/80 mb-1">
                 Password
               </label>
               <input
                 type="password"
                 value={credentials.password}
                 onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300"
             >
               Login
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-6 p-4 bg-white/10 rounded-lg">
+            <p className="text-sm text-white/80">
               <strong>Demo Credentials:</strong><br />
               Username: admin<br />
               Password: admin123
@@ -396,295 +374,191 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="p-4 space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage tests and configurations</p>
-        </div>
-        <button
-          onClick={() => setIsLoggedIn(false)}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          Logout
-        </button>
-      </div>
-
-      {/* Test Management */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Test Management</h2>
-          <div className="flex space-x-2">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Admin Panel</h1>
+            <p className="text-white/80">Manage tests and configurations</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            {user && (
+              <div className="flex items-center space-x-2">
+                <Database size={20} className="text-white" />
+                <button
+                  onClick={() => setUseDatabase(!useDatabase)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    useDatabase 
+                      ? 'bg-green-500 hover:bg-green-600 text-white' 
+                      : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                >
+                  {useDatabase ? 'Database Mode' : 'Local Mode'}
+                </button>
+              </div>
+            )}
             <button
-              onClick={() => setShowTsUpload(true)}
-              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              onClick={() => setIsLoggedIn(false)}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
-              <FileText size={20} />
-              <span>Upload TS Code</span>
-            </button>
-            <button
-              onClick={handleAddTest}
-              className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <Plus size={20} />
-              <span>Add Test</span>
+              Logout
             </button>
           </div>
         </div>
 
-        <div className="space-y-3">
-          {tests.map((test) => (
-            <div key={test.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3">
-                  <span className={`inline-block w-3 h-3 rounded-full ${
-                    test.isLive ? 'bg-green-500' : 'bg-red-500'
-                  }`}></span>
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">{test.testName}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {test.testType.charAt(0).toUpperCase() + test.testType.slice(1)} • {test.totalMarks} marks • {test.durationInMinutes} min • {test.sections.length} sections
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => toggleTestStatus(test.id)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    test.isLive 
-                      ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/30' 
-                      : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-500'
-                  }`}
-                  title={test.isLive ? 'Hide Test' : 'Show Test'}
-                >
-                  {test.isLive ? <Eye size={16} /> : <EyeOff size={16} />}
-                </button>
-                
-                <button
-                  onClick={() => handleEditTest(test)}
-                  className="p-2 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-colors"
-                  title="Edit Test"
-                >
-                  <Upload size={16} />
-                </button>
-                
-                <button
-                  onClick={() => deleteTest(test.id)}
-                  className="p-2 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors"
-                  title="Delete Test"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* TS Code Upload Modal */}
-      {showTsUpload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Upload Test from TypeScript Code</h2>
+        {/* Test Management */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">Test Management</h2>
+            <div className="flex space-x-2">
               <button
-                onClick={() => {
-                  setShowTsUpload(false);
-                  setTsCode('');
-                }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                onClick={() => setShowTsUpload(true)}
+                className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
               >
-                <X size={20} className="text-gray-500" />
+                <FileText size={20} />
+                <span>Upload TS Code</span>
               </button>
             </div>
+          </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Paste your TypeScript test data here:
-                </label>
-                <textarea
-                  value={tsCode}
-                  onChange={(e) => setTsCode(e.target.value)}
-                  placeholder={sampleTestData}
-                  className="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white font-mono text-sm"
-                />
-              </div>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white/80">Loading tests...</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {tests.map((test) => (
+                <div key={test.id} className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <span className={`inline-block w-3 h-3 rounded-full ${
+                        test.isLive ? 'bg-green-400' : 'bg-red-400'
+                      }`}></span>
+                      <div>
+                        <h3 className="font-bold text-white">{test.testName}</h3>
+                        <p className="text-white/80 text-sm">
+                          {test.testType.charAt(0).toUpperCase() + test.testType.slice(1)} • {test.totalMarks} marks • {test.durationInMinutes} min • {test.sections.length} sections
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => toggleTestStatus(test.id)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        test.isLive 
+                          ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30' 
+                          : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                      }`}
+                      title={test.isLive ? 'Hide Test' : 'Show Test'}
+                    >
+                      {test.isLive ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
+                    
+                    <button
+                      onClick={() => deleteTest(test.id)}
+                      className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors"
+                      title="Delete Test"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2">Sample Format:</h3>
-                <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-x-auto">
-                  {sampleTestData}
-                </pre>
-              </div>
-
-              <div className="flex justify-end space-x-4">
+        {/* TS Code Upload Modal */}
+        {showTsUpload && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Upload Test from TypeScript Code</h2>
                 <button
                   onClick={() => {
                     setShowTsUpload(false);
                     setTsCode('');
                   }}
-                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="p-2 hover:bg-white/10 rounded-lg"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleTsUpload}
-                  disabled={!tsCode.trim()}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Upload size={20} />
-                  <span>Create Test</span>
+                  <X size={20} className="text-white" />
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Test Editor Modal - keeping existing implementation */}
-      {showAddTest && editingTest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {tests.find(t => t.id === editingTest.id) ? 'Edit Test' : 'Add New Test'}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowAddTest(false);
-                  setEditingTest(null);
-                }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <X size={20} className="text-gray-500" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Basic Test Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Test Name
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    Paste your TypeScript test data here:
                   </label>
-                  <input
-                    type="text"
-                    value={editingTest.testName}
-                    onChange={(e) => setEditingTest(prev => prev ? { ...prev, testName: e.target.value } : null)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                  <textarea
+                    value={tsCode}
+                    onChange={(e) => setTsCode(e.target.value)}
+                    placeholder={sampleTestData}
+                    className="w-full h-64 px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/40 font-mono text-sm"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Test Name (Hindi)
-                  </label>
-                  <input
-                    type="text"
-                    value={editingTest.testNameHi || ''}
-                    onChange={(e) => setEditingTest(prev => prev ? { ...prev, testNameHi: e.target.value } : null)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                  />
+                <div className="bg-white/10 rounded-lg p-4">
+                  <h3 className="font-medium text-white mb-2">Sample Format:</h3>
+                  <pre className="text-xs text-white/80 overflow-x-auto">
+                    {sampleTestData}
+                  </pre>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Test Type
-                  </label>
-                  <select
-                    value={editingTest.testType}
-                    onChange={(e) => setEditingTest(prev => prev ? { ...prev, testType: e.target.value as 'navodaya' | 'sainik' } : null)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => {
+                      setShowTsUpload(false);
+                      setTsCode('');
+                    }}
+                    className="px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
                   >
-                    <option value="navodaya">Navodaya</option>
-                    <option value="sainik">Sainik</option>
-                  </select>
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleTsUpload}
+                    disabled={!tsCode.trim()}
+                    className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300"
+                  >
+                    <Upload size={20} />
+                    <span>Create Test</span>
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Duration (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    value={editingTest.durationInMinutes}
-                    onChange={(e) => setEditingTest(prev => prev ? { ...prev, durationInMinutes: parseInt(e.target.value) } : null)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Save Button */}
-              <div className="flex justify-end space-x-4">
-                <button
-                  onClick={() => {
-                    setShowAddTest(false);
-                    setEditingTest(null);
-                  }}
-                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveTest}
-                  className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Save size={20} />
-                  <span>Save Test</span>
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Admin Data Management */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Admin Data Management</h2>
-        
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <h3 className="font-medium text-red-800 dark:text-red-300 mb-2">Danger Zone</h3>
-          <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-            This will permanently delete all data including tests, user attempts, and settings. This action cannot be undone.
-          </p>
-          <button
-            onClick={clearAllData}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            Clear All Data
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total Tests</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{tests.length}</p>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Live Tests</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {tests.filter(t => t.isLive).length}
-          </p>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Navodaya Tests</p>
-          <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-            {tests.filter(t => t.testType === 'navodaya').length}
-          </p>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Sainik Tests</p>
-          <p className="text-2xl font-bold text-accent-600 dark:text-accent-400">
-            {tests.filter(t => t.testType === 'sainik').length}
-          </p>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+            <p className="text-white/80 text-sm">Total Tests</p>
+            <p className="text-2xl font-bold text-white">{tests.length}</p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+            <p className="text-white/80 text-sm">Live Tests</p>
+            <p className="text-2xl font-bold text-green-400">
+              {tests.filter(t => t.isLive).length}
+            </p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+            <p className="text-white/80 text-sm">Navodaya Tests</p>
+            <p className="text-2xl font-bold text-cyan-400">
+              {tests.filter(t => t.testType === 'navodaya').length}
+            </p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+            <p className="text-white/80 text-sm">Sainik Tests</p>
+            <p className="text-2xl font-bold text-pink-400">
+              {tests.filter(t => t.testType === 'sainik').length}
+            </p>
+          </div>
         </div>
       </div>
     </div>
