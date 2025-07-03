@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
@@ -27,10 +27,18 @@ const Quiz: React.FC = () => {
   const [attemptId, setAttemptId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load test data
+  // Memoize the current question to prevent unnecessary re-renders
+  const currentQuestion = useMemo(() => {
+    return allQuestions.length > 0 && currentQuestionIndex < allQuestions.length 
+      ? allQuestions[currentQuestionIndex] 
+      : null;
+  }, [allQuestions, currentQuestionIndex]);
+
+  // Load test data - memoized to prevent infinite calls
   const loadTest = useCallback(async () => {
-    if (!testId || !testType) return;
+    if (!testId || !testType || isInitialized) return;
     
     setIsLoading(true);
     setError(null);
@@ -89,6 +97,7 @@ const Quiz: React.FC = () => {
         return;
       }
 
+      // Set test data
       setTest(foundTest);
       setCurrentTest(foundTest);
 
@@ -107,9 +116,7 @@ const Quiz: React.FC = () => {
         }))
       );
       setAllQuestions(questions);
-
-      // Clear saved answers for this session
-      localStorage.removeItem(`quiz-answers-${newAttemptId}`);
+      setIsInitialized(true);
       
     } catch (error) {
       console.error('Error loading test:', error);
@@ -117,27 +124,27 @@ const Quiz: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [testId, testType, setCurrentTest, setCurrentAttemptId, clearUserAnswers]);
+  }, [testId, testType, isInitialized, setCurrentTest, setCurrentAttemptId, clearUserAnswers]);
 
-  // Initialize test on mount
+  // Initialize test on mount - only once
   useEffect(() => {
-    loadTest();
-  }, [loadTest]);
+    if (!isInitialized) {
+      loadTest();
+    }
+  }, [loadTest, isInitialized]);
 
   // Update selected answer when question changes
   useEffect(() => {
-    if (allQuestions.length > 0 && currentQuestionIndex < allQuestions.length) {
-      const currentQuestion = allQuestions[currentQuestionIndex];
+    if (currentQuestion) {
       const existingAnswer = userAnswers.find(a => a.questionId === currentQuestion.id);
       setSelectedAnswer(existingAnswer?.selectedAnswer || '');
     }
-  }, [currentQuestionIndex, userAnswers, allQuestions]);
+  }, [currentQuestion, userAnswers]);
 
-  const handleAnswerSelect = (answer: string) => {
+  const handleAnswerSelect = useCallback((answer: string) => {
     setSelectedAnswer(answer);
     
-    if (allQuestions.length > 0 && currentQuestionIndex < allQuestions.length) {
-      const currentQuestion = allQuestions[currentQuestionIndex];
+    if (currentQuestion) {
       const userAnswer = {
         questionId: currentQuestion.id,
         selectedAnswer: answer,
@@ -147,36 +154,30 @@ const Quiz: React.FC = () => {
       
       addUserAnswer(userAnswer);
     }
-  };
+  }, [currentQuestion, addUserAnswer]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentQuestionIndex < allQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
-  };
+  }, [currentQuestionIndex, allQuestions.length]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
     }
-  };
+  }, [currentQuestionIndex]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (confirm(language === 'hi' ? 'क्या आप टेस्ट सबमिट करना चाहते हैं?' : 'Are you sure you want to submit the test?')) {
-      if (attemptId) {
-        localStorage.removeItem(`quiz-answers-${attemptId}`);
-      }
       navigate(`/results/${testType}/${testId}`);
     }
-  };
+  }, [language, navigate, testType, testId]);
 
   const handleTimeUp = useCallback(() => {
     alert(language === 'hi' ? 'समय समाप्त! टेस्ट सबमिट हो रहा है।' : 'Time is up! Submitting the test.');
-    if (attemptId) {
-      localStorage.removeItem(`quiz-answers-${attemptId}`);
-    }
     navigate(`/results/${testType}/${testId}`);
-  }, [language, attemptId, navigate, testType, testId]);
+  }, [language, navigate, testType, testId]);
 
   if (isLoading) {
     return (
@@ -207,7 +208,16 @@ const Quiz: React.FC = () => {
     );
   }
 
-  const currentQuestion = allQuestions[currentQuestionIndex];
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white text-lg font-medium">Loading question...</p>
+        </div>
+      </div>
+    );
+  }
+
   const answeredQuestions = userAnswers.length;
 
   return (

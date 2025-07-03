@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Clock } from 'lucide-react';
 
 interface TimerProps {
@@ -8,28 +8,42 @@ interface TimerProps {
 
 const Timer: React.FC<TimerProps> = ({ duration, onTimeUp }) => {
   const [timeLeft, setTimeLeft] = useState(duration * 60); // convert to seconds
-  const [isActive, setIsActive] = useState(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const onTimeUpRef = useRef(onTimeUp);
+
+  // Update the ref when onTimeUp changes
+  useEffect(() => {
+    onTimeUpRef.current = onTimeUp;
+  }, [onTimeUp]);
 
   useEffect(() => {
-    if (!isActive || timeLeft <= 0) {
-      if (timeLeft <= 0) {
-        onTimeUp();
-      }
-      return;
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
 
-    const timer = setInterval(() => {
+    // Start the timer
+    intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          setIsActive(false);
+          // Time's up
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+          onTimeUpRef.current();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft, onTimeUp, isActive]);
+    // Cleanup on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [duration]); // Only depend on duration
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

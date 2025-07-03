@@ -36,33 +36,41 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [testAttempts, setTestAttempts] = useState<TestAttempt[]>([]);
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load user attempts from Supabase or localStorage
   const loadUserAttempts = async () => {
-    if (user) {
-      try {
-        const supabaseAttempts = await attemptService.getUserAttempts(user.id);
-        const formattedAttempts = supabaseAttempts.map(attempt => ({
-          id: attempt.id,
-          testId: attempt.test_id,
-          testType: attempt.test_type as 'navodaya' | 'sainik',
-          testName: attempt.test_name,
-          score: attempt.score,
-          totalMarks: attempt.total_marks,
-          percentage: attempt.percentage,
-          date: attempt.completed_at,
-          duration: attempt.duration,
-          sectionWiseScore: attempt.section_wise_score
-        }));
-        setTestAttempts(formattedAttempts);
-      } catch (error) {
-        console.error('Error loading user attempts from Supabase:', error);
-        // Fallback to localStorage
+    if (isLoading) return; // Prevent multiple simultaneous loads
+    
+    setIsLoading(true);
+    try {
+      if (user) {
+        try {
+          const supabaseAttempts = await attemptService.getUserAttempts(user.id);
+          const formattedAttempts = supabaseAttempts.map(attempt => ({
+            id: attempt.id,
+            testId: attempt.test_id,
+            testType: attempt.test_type as 'navodaya' | 'sainik',
+            testName: attempt.test_name,
+            score: attempt.score,
+            totalMarks: attempt.total_marks,
+            percentage: attempt.percentage,
+            date: attempt.completed_at,
+            duration: attempt.duration,
+            sectionWiseScore: attempt.section_wise_score
+          }));
+          setTestAttempts(formattedAttempts);
+        } catch (error) {
+          console.error('Error loading user attempts from Supabase:', error);
+          // Fallback to localStorage
+          loadLocalAttempts();
+        }
+      } else {
+        // Load from localStorage for guest users
         loadLocalAttempts();
       }
-    } else {
-      // Load from localStorage for guest users
-      loadLocalAttempts();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,6 +89,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Load attempts only once when user changes
   useEffect(() => {
     loadUserAttempts();
 
@@ -88,18 +97,22 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedLanguage) {
       setLanguage(savedLanguage as 'en' | 'hi');
     }
-  }, [user]);
+  }, [user?.id]); // Only depend on user ID to prevent infinite loops
 
-  useEffect(() => {
-    // Save to localStorage for guest users or as backup
-    if (testAttempts.length > 0 && !user) {
-      localStorage.setItem('prep-with-satyam-attempts', JSON.stringify(testAttempts));
-    }
-  }, [testAttempts, user]);
-
+  // Save language preference
   useEffect(() => {
     localStorage.setItem('prep-with-satyam-language', language);
   }, [language]);
+
+  // Save attempts to localStorage for guest users (debounced)
+  useEffect(() => {
+    if (testAttempts.length > 0 && !user) {
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem('prep-with-satyam-attempts', JSON.stringify(testAttempts));
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [testAttempts, user]);
 
   const addUserAnswer = (answer: UserAnswer) => {
     setUserAnswers(prev => {
