@@ -1,24 +1,46 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Safely get environment variables with fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Get environment variables with fallbacks to localStorage
+const getSupabaseUrl = () => {
+  return import.meta.env.VITE_SUPABASE_URL || 
+         localStorage.getItem('supabase_url') || 
+         '';
+};
+
+const getSupabaseKey = () => {
+  return import.meta.env.VITE_SUPABASE_ANON_KEY || 
+         localStorage.getItem('supabase_key') || 
+         '';
+};
 
 // Only create client if we have valid credentials
 let supabase: any = null;
 let isSupabaseAvailable = false;
 
-try {
-  if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    isSupabaseAvailable = true;
-  } else {
-    console.warn('Supabase credentials not available or invalid. Running in offline mode.');
+const initializeSupabase = () => {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseAnonKey = getSupabaseKey();
+
+  try {
+    if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')) {
+      supabase = createClient(supabaseUrl, supabaseAnonKey);
+      isSupabaseAvailable = true;
+      console.log('✅ Supabase initialized successfully');
+    } else {
+      console.warn('⚠️ Supabase credentials not available or invalid. Running in offline mode.');
+      isSupabaseAvailable = false;
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize Supabase:', error);
+    isSupabaseAvailable = false;
   }
-} catch (error) {
-  console.error('Failed to initialize Supabase:', error);
-  isSupabaseAvailable = false;
-}
+};
+
+// Initialize on load
+initializeSupabase();
+
+// Re-initialize when storage changes
+window.addEventListener('storage', initializeSupabase);
 
 // Database types
 export interface DatabaseTest {
@@ -56,10 +78,16 @@ export const testService = {
   // Check if Supabase is available
   isAvailable: () => isSupabaseAvailable && supabase,
 
+  // Re-initialize connection
+  reconnect: () => {
+    initializeSupabase();
+    return isSupabaseAvailable;
+  },
+
   // Get all live tests
   async getLiveTests(): Promise<DatabaseTest[]> {
     if (!isSupabaseAvailable || !supabase) {
-      return [];
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -71,20 +99,20 @@ export const testService = {
 
       if (error) {
         console.error('Error fetching tests:', error);
-        return [];
+        throw error;
       }
 
       return data || [];
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return [];
+      throw error;
     }
   },
 
   // Get all tests (for admin)
   async getAllTests(): Promise<DatabaseTest[]> {
     if (!isSupabaseAvailable || !supabase) {
-      return [];
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -95,20 +123,20 @@ export const testService = {
 
       if (error) {
         console.error('Error fetching all tests:', error);
-        return [];
+        throw error;
       }
 
       return data || [];
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return [];
+      throw error;
     }
   },
 
   // Create a new test
   async createTest(testData: any): Promise<DatabaseTest | null> {
     if (!isSupabaseAvailable || !supabase) {
-      return null;
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -129,20 +157,20 @@ export const testService = {
 
       if (error) {
         console.error('Error creating test:', error);
-        return null;
+        throw error;
       }
 
       return data;
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return null;
+      throw error;
     }
   },
 
   // Update a test
   async updateTest(id: string, testData: any): Promise<DatabaseTest | null> {
     if (!isSupabaseAvailable || !supabase) {
-      return null;
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -164,20 +192,20 @@ export const testService = {
 
       if (error) {
         console.error('Error updating test:', error);
-        return null;
+        throw error;
       }
 
       return data;
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return null;
+      throw error;
     }
   },
 
   // Toggle test live status
   async toggleTestStatus(id: string, isLive: boolean): Promise<boolean> {
     if (!isSupabaseAvailable || !supabase) {
-      return false;
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -188,20 +216,20 @@ export const testService = {
 
       if (error) {
         console.error('Error toggling test status:', error);
-        return false;
+        throw error;
       }
 
       return true;
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return false;
+      throw error;
     }
   },
 
   // Delete a test
   async deleteTest(id: string): Promise<boolean> {
     if (!isSupabaseAvailable || !supabase) {
-      return false;
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -212,20 +240,20 @@ export const testService = {
 
       if (error) {
         console.error('Error deleting test:', error);
-        return false;
+        throw error;
       }
 
       return true;
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return false;
+      throw error;
     }
   },
 
   // Get test by ID
   async getTestById(id: string): Promise<DatabaseTest | null> {
     if (!isSupabaseAvailable || !supabase) {
-      return null;
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -237,13 +265,13 @@ export const testService = {
 
       if (error) {
         console.error('Error fetching test:', error);
-        return null;
+        throw error;
       }
 
       return data;
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return null;
+      throw error;
     }
   }
 };
@@ -253,7 +281,7 @@ export const attemptService = {
   // Get user's test attempts
   async getUserAttempts(userId: string): Promise<DatabaseTestAttempt[]> {
     if (!isSupabaseAvailable || !supabase) {
-      return [];
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -265,20 +293,20 @@ export const attemptService = {
 
       if (error) {
         console.error('Error fetching user attempts:', error);
-        return [];
+        throw error;
       }
 
       return data || [];
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return [];
+      throw error;
     }
   },
 
   // Save test attempt
   async saveAttempt(attemptData: any, userId: string): Promise<DatabaseTestAttempt | null> {
     if (!isSupabaseAvailable || !supabase) {
-      return null;
+      throw new Error('Supabase not available');
     }
 
     try {
@@ -301,13 +329,13 @@ export const attemptService = {
 
       if (error) {
         console.error('Error saving attempt:', error);
-        return null;
+        throw error;
       }
 
       return data;
     } catch (error) {
       console.error('Supabase connection error:', error);
-      return null;
+      throw error;
     }
   }
 };

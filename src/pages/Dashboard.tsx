@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap } from 'lucide-react';
+import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Database, Settings } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
+import { testService } from '../lib/supabase';
+import SupabaseSetup from '../components/SupabaseSetup';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { testAttempts } = useQuiz();
   const [joke, setJoke] = useState('');
+  const [showSupabaseSetup, setShowSupabaseSetup] = useState(false);
+  const [databaseConnected, setDatabaseConnected] = useState(false);
 
   const jokes = [
     "Test ka question paper dekhte hi laga... Teacher ne humse nahi, NASA se inspiration liya hai! 🚀📄",
@@ -24,6 +28,22 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
     setJoke(randomJoke);
+
+    // Check database connection
+    const checkConnection = async () => {
+      try {
+        if (testService.isAvailable()) {
+          await testService.getAllTests();
+          setDatabaseConnected(true);
+        } else {
+          setDatabaseConnected(false);
+        }
+      } catch (error) {
+        setDatabaseConnected(false);
+      }
+    };
+
+    checkConnection();
   }, []);
 
   const totalAttempts = testAttempts.length;
@@ -36,12 +56,39 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Database Status Banner */}
+        {!databaseConnected && (
+          <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Database size={24} className="text-yellow-300" />
+                <div>
+                  <p className="font-bold text-yellow-200">Running in Offline Mode</p>
+                  <p className="text-yellow-300 text-sm">Connect to Supabase to save your progress</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSupabaseSetup(true)}
+                className="bg-yellow-500 hover:bg-yellow-600 text-yellow-900 px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Connect Database
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Card */}
         <div className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-2xl p-6 text-white shadow-2xl">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Welcome back, Satyam!</h1>
               <p className="text-blue-100 mt-2 text-lg">Ready to ace your next test?</p>
+              {databaseConnected && (
+                <div className="flex items-center space-x-2 mt-2">
+                  <Database size={16} className="text-green-300" />
+                  <span className="text-green-200 text-sm font-medium">Database Connected</span>
+                </div>
+              )}
             </div>
             <div className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center">
               <GraduationCap size={40} />
@@ -151,6 +198,11 @@ const Dashboard: React.FC = () => {
           <p className="text-white leading-relaxed">{joke}</p>
         </div>
       </div>
+
+      {/* Supabase Setup Modal */}
+      {showSupabaseSetup && (
+        <SupabaseSetup onClose={() => setShowSupabaseSetup(false)} />
+      )}
     </div>
   );
 };
