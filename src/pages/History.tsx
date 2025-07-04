@@ -13,9 +13,13 @@ const History: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   const chartData = testAttempts.slice(-10).map((attempt, index) => ({
-    attempt: index + 1,
+    attempt: `Test ${index + 1}`,
     score: attempt.percentage,
-    date: new Date(attempt.date).toLocaleDateString()
+    date: new Date(attempt.date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    }),
+    fullDate: new Date(attempt.date).toLocaleDateString()
   }));
 
   const averageScore = testAttempts.length > 0 
@@ -316,9 +320,12 @@ const History: React.FC = () => {
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#E5E7EB"} />
                       <XAxis 
-                        dataKey="attempt" 
+                        dataKey="date" 
                         stroke={darkMode ? "#9CA3AF" : "#6B7280"}
-                        fontSize={12}
+                        fontSize={10}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
                       />
                       <YAxis 
                         stroke={darkMode ? "#9CA3AF" : "#6B7280"}
