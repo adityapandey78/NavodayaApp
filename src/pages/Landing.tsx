@@ -81,7 +81,6 @@ const Landing: React.FC = () => {
             </div>
           </div>
 
-              className={`w-full text-white font-medium py-3 md:py-4 px-4 md:px-6 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 text-sm md:text-base ${
           <div className="space-y-3 md:space-y-4">
             <button
               onClick={() => navigate('/dashboard')}
