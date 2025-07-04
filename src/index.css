@@ -41,6 +41,11 @@
 
 /* Mobile optimizations */
 @media (max-width: 768px) {
+  .mobile-text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  
   .mobile-text-sm {
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -69,6 +74,56 @@
   .mobile-text-3xl {
     font-size: 1.875rem;
     line-height: 2.25rem;
+  }
+}
+
+/* Extra small mobile optimizations for 320px */
+@media (max-width: 320px) {
+  .xs-mobile-text-xs {
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  }
+  
+  .xs-mobile-text-sm {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  
+  .xs-mobile-text-base {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  .xs-mobile-text-lg {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  
+  .xs-mobile-text-xl {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  
+  .xs-mobile-text-2xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+  
+  .xs-mobile-text-3xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  
+  .xs-mobile-spacing-sm {
+    padding: 0.5rem;
+  }
+  
+  .xs-mobile-spacing-md {
+    padding: 0.75rem;
+  }
+  
+  .xs-mobile-spacing-lg {
+    padding: 1rem;
   }
 }
 

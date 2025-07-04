@@ -209,22 +209,22 @@ const Quiz: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="glass-dark border-b border-white/10 p-4">
+      <div className="glass-dark border-b border-white/10 p-3 sm:p-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between max-w-7xl mx-auto space-y-4 md:space-y-0">
           <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
-            <h1 className="text-base md:text-xl font-bold text-white">
+            <h1 className="text-sm sm:text-base md:text-xl font-bold text-white">
               {test.testName}
             </h1>
             {hasHindiContent && (
               <button
                 onClick={() => setShowHindi(!showHindi)}
-                className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-xs md:text-sm font-medium transition-colors self-start ${
+                className={`flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-xs md:text-sm font-medium transition-colors self-start ${
                   showHindi 
                     ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
                     : 'bg-white/10 text-white/80 border border-white/20'
                 }`}
               >
-                <Globe size={14} />
+                <Globe size={12} className="sm:w-3.5 sm:h-3.5" />
                 <span>{showHindi ? 'हिंदी' : 'Hindi'}</span>
               </button>
             )}
@@ -233,7 +233,7 @@ const Quiz: React.FC = () => {
         </div>
         
         <div className="mt-4 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between text-xs md:text-sm text-white/80 mb-2">
+          <div className="flex items-center justify-between text-xs sm:text-xs md:text-sm text-white/80 mb-2">
             <span>Question {currentQuestionIndex + 1} of {allQuestions.length}</span>
             <span>{answeredQuestions}/{allQuestions.length} answered</span>
           </div>
@@ -242,20 +242,20 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Question */}
-      <div className="p-4 max-w-4xl mx-auto">
-        <div className="glass-dark rounded-2xl p-4 md:p-6 border border-white/10 mb-6">
+      <div className="p-3 sm:p-4 max-w-4xl mx-auto">
+        <div className="glass-dark rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border border-white/10 mb-4 sm:mb-6">
           <div className="mb-4">
-            <span className="inline-block px-3 py-1 md:px-4 md:py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 text-xs md:text-sm rounded-full mb-4 font-medium border border-purple-500/30">
+            <span className="inline-block px-2 sm:px-3 py-1 md:px-4 md:py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 text-xs sm:text-xs md:text-sm rounded-full mb-3 sm:mb-4 font-medium border border-purple-500/30">
               {currentQuestion.sectionName}
             </span>
-            <div className="text-sm md:text-lg font-medium text-white leading-relaxed">
+            <div className="text-xs sm:text-sm md:text-lg font-medium text-white leading-relaxed">
               {showHindi && currentQuestion.questionHi 
                 ? currentQuestion.questionHi 
                 : currentQuestion.question}
             </div>
           </div>
 
-          <div className="space-y-2 md:space-y-3">
+          <div className="space-y-2 sm:space-y-2 md:space-y-3">
             {currentQuestion.options.map((option: string, index: number) => {
               const optionText = showHindi && currentQuestion.optionsHi 
                 ? currentQuestion.optionsHi[index] 
@@ -267,14 +267,14 @@ const Quiz: React.FC = () => {
                 <button
                   key={`${currentQuestion.id}-${index}`}
                   onClick={() => handleAnswerSelect(option)}
-                  className={`w-full p-3 md:p-4 rounded-xl border-2 text-left transition-all duration-300 ${
+                  className={`w-full p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border-2 text-left transition-all duration-300 ${
                     isSelected
                       ? 'border-cyan-400 bg-gradient-to-r from-cyan-400/20 to-blue-500/20 text-white shadow-lg transform scale-[1.02]'
                       : 'border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/10 text-white hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-start space-x-3">
-                    <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  <div className="flex items-start space-x-2 sm:space-x-3">
+                    <div className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                       isSelected
                         ? 'border-cyan-400 bg-cyan-400'
                         : 'border-white/40'
@@ -283,10 +283,10 @@ const Quiz: React.FC = () => {
                         <div className="w-2 h-2 md:w-3 md:h-3 bg-white rounded-full"></div>
                       )}
                     </div>
-                    <span className="font-bold text-cyan-300 text-sm md:text-base mt-0.5">
+                    <span className="font-bold text-cyan-300 text-xs sm:text-sm md:text-base mt-0.5">
                       {String.fromCharCode(65 + index)}.
                     </span>
-                    <span className="flex-1 text-sm md:text-base leading-relaxed">{optionText}</span>
+                    <span className="flex-1 text-xs sm:text-sm md:text-base leading-relaxed">{optionText}</span>
                   </div>
                 </button>
               );
@@ -299,9 +299,9 @@ const Quiz: React.FC = () => {
           <button
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0}
-            className="flex items-center space-x-2 px-4 py-2 md:px-6 md:py-3 rounded-xl bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all duration-300 border border-white/20 text-sm md:text-base"
+            className="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 md:px-6 md:py-3 rounded-lg sm:rounded-xl bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all duration-300 border border-white/20 text-xs sm:text-sm md:text-base"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} className="sm:w-4 sm:h-4" />
             <span className="font-medium">Previous</span>
           </button>
 
@@ -309,18 +309,18 @@ const Quiz: React.FC = () => {
             {currentQuestionIndex === allQuestions.length - 1 ? (
               <button
                 onClick={handleSubmit}
-                className="flex items-center space-x-2 px-6 py-2 md:px-8 md:py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-base"
+                className="flex items-center space-x-1.5 sm:space-x-2 px-4 sm:px-6 py-2 md:px-8 md:py-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-xs sm:text-sm md:text-base"
               >
-                <Flag size={16} />
+                <Flag size={14} className="sm:w-4 sm:h-4" />
                 <span>Submit Test</span>
               </button>
             ) : (
               <button
                 onClick={handleNext}
-                className="flex items-center space-x-2 px-4 py-2 md:px-6 md:py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-base"
+                className="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 md:px-6 md:py-3 rounded-lg sm:rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-xs sm:text-sm md:text-base"
               >
                 <span className="font-medium">Next</span>
-                <ChevronRight size={16} />
+                <ChevronRight size={14} className="sm:w-4 sm:h-4" />
               </button>
             )}
           </div>
