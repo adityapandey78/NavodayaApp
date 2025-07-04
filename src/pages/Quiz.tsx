@@ -144,22 +144,21 @@ const Quiz: React.FC = () => {
   const handleSubmit = useCallback(() => {
     // Check if online before allowing submission
     if (!navigator.onLine) {
-      alert('⚠️ Internet Connection Required\n\nYou must be connected to the internet to submit your test. Please:\n\n1. Check your internet connection\n2. Try again once connected\n\nYour answers are saved and will not be lost.');
+      showError('🌐 Internet Connection Required\n\nYou must be connected to the internet to submit your test. Please:\n\n1. Check your internet connection\n2. Try again once connected\n\nYour answers are saved and will not be lost.');
       return;
     }
     
-    if (confirm('🚀 Submit Test?\n\nAre you sure you want to submit your test?\n\n✅ Make sure you have a stable internet connection\n✅ All your answers will be saved\n\nClick OK to submit now.')) {
-      navigate(`/results/${testType}/${testId}`);
-    }
+    // Immediate navigation to prevent freezing
+    navigate(`/results/${testType}/${testId}`);
   }, [navigate, testType, testId]);
 
   const handleTimeUp = useCallback(() => {
     if (!navigator.onLine) {
-      alert('⏰ Time is Up!\n\nInternet connection is required to submit your test.\n\nPlease:\n1. Connect to the internet\n2. Click the Submit button manually\n\nYour answers are saved and will not be lost.');
+      showError('⏰ Time is Up!\n\nInternet connection is required to submit your test.\n\nPlease:\n1. Connect to the internet\n2. Click the Submit button manually\n\nYour answers are saved and will not be lost.');
       return;
     }
     
-    alert('⏰ Time is Up!\n\nSubmitting your test now...');
+    // Immediate navigation to prevent freezing
     navigate(`/results/${testType}/${testId}`);
   }, [navigate, testType, testId]);
 

@@ -39,8 +39,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasPendingAttempts, setHasPendingAttempts] = useState(false);
-  const [submittedAttempts, setSubmittedAttempts] = useState<Set<string>>(new Set());
-  const [attemptSaved, setAttemptSaved] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check for pending attempts
   useEffect(() => {
@@ -133,66 +132,24 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addTestAttempt = async (attempt: TestAttempt) => {
-    // Prevent multiple submissions for the same attempt
-    if (submittedAttempts.has(attempt.id) || attemptSaved) {
-      console.log('Attempt already processed, skipping');
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      console.log('Already submitting, skipping duplicate submission');
       return;
     }
     
-    // Mark as being processed
-    setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
-    setAttemptSaved(true);
+    setIsSubmitting(true);
     
-    if (user) {
-      try {
-        // Check if online - REQUIRED for submission
-        if (!networkService.isOnline()) {
-          throw new Error('Internet connection required');
-        }
-        
-        // Always try to save online for test submissions
-        const savedAttempt = await attemptService.saveAttempt({
-          testId: attempt.testId,
-          testType: attempt.testType,
-          testName: attempt.testName,
-          score: attempt.score,
-          totalMarks: attempt.totalMarks,
-          percentage: attempt.percentage,
-          duration: attempt.duration,
-          sectionWiseScore: attempt.sectionWiseScore,
-          userAnswers: userAnswers.map(answer => ({
-            questionId: answer.questionId,
-            selectedAnswer: answer.selectedAnswer,
-            isCorrect: answer.isCorrect,
-            marks: answer.marks
-          }))
-        }, user.id);
-
-        if (savedAttempt) {
-          const formattedAttempt = {
-            id: savedAttempt.id,
-            testId: savedAttempt.test_id,
-            testType: savedAttempt.test_type as 'navodaya' | 'sainik',
-            testName: savedAttempt.test_name,
-            score: savedAttempt.score,
-            totalMarks: savedAttempt.total_marks,
-            percentage: savedAttempt.percentage,
-            date: savedAttempt.completed_at,
-            duration: savedAttempt.duration,
-            sectionWiseScore: savedAttempt.section_wise_score
-          };
-
-          setTestAttempts(prev => [formattedAttempt, ...prev]);
-          showSuccess('Test results submitted successfully!');
-        }
-      } catch (error: any) {
-        console.error('Error saving attempt:', error);
-        
-        // Don't reset flags to prevent infinite retries
-        
-        if (error.message.includes('internet') || error.message.includes('connection') || !networkService.isOnline()) {
-          // Save to pending only as a backup, but show error for submission failure
-          attemptService.savePendingAttempt({
+    try {
+      if (user) {
+        try {
+          // Check if online - REQUIRED for submission
+          if (!networkService.isOnline()) {
+            throw new Error('Internet connection required');
+          }
+          
+          // Always try to save online for test submissions
+          const savedAttempt = await attemptService.saveAttempt({
             testId: attempt.testId,
             testType: attempt.testType,
             testName: attempt.testName,
@@ -208,27 +165,68 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
               marks: answer.marks
             }))
           }, user.id);
+
+          if (savedAttempt) {
+            const formattedAttempt = {
+              id: savedAttempt.id,
+              testId: savedAttempt.test_id,
+              testType: savedAttempt.test_type as 'navodaya' | 'sainik',
+              testName: savedAttempt.test_name,
+              score: savedAttempt.score,
+              totalMarks: savedAttempt.total_marks,
+              percentage: savedAttempt.percentage,
+              date: savedAttempt.completed_at,
+              duration: savedAttempt.duration,
+              sectionWiseScore: savedAttempt.section_wise_score
+            };
+
+            setTestAttempts(prev => [formattedAttempt, ...prev]);
+            showSuccess('Test results submitted successfully!');
+          }
+        } catch (error: any) {
+          console.error('Error saving attempt:', error);
           
-          setHasPendingAttempts(true);
-          showError('❌ Submission Failed\n\nInternet connection required to submit test results.\n\nResults saved locally and will be uploaded when you reconnect.');
-        } else {
-          showError(`❌ Submission Failed\n\n${error.message}\n\nPlease try again with a stable internet connection.`);
+          if (error.message.includes('internet') || error.message.includes('connection') || !networkService.isOnline()) {
+            // Save to pending only as a backup, but show error for submission failure
+            attemptService.savePendingAttempt({
+              testId: attempt.testId,
+              testType: attempt.testType,
+              testName: attempt.testName,
+              score: attempt.score,
+              totalMarks: attempt.totalMarks,
+              percentage: attempt.percentage,
+              duration: attempt.duration,
+              sectionWiseScore: attempt.sectionWiseScore,
+              userAnswers: userAnswers.map(answer => ({
+                questionId: answer.questionId,
+                selectedAnswer: answer.selectedAnswer,
+                isCorrect: answer.isCorrect,
+                marks: answer.marks
+              }))
+            }, user.id);
+            
+            setHasPendingAttempts(true);
+            showError('❌ Submission Failed\n\nInternet connection required to submit test results.\n\nResults saved locally and will be uploaded when you reconnect.');
+          } else {
+            showError(`❌ Submission Failed\n\n${error.message}\n\nPlease try again with a stable internet connection.`);
+          }
+          
+          // Add to local state for immediate display even if submission failed
+          setTestAttempts(prev => [attempt, ...prev]);
         }
-        
-        // Add to local state for immediate display even if submission failed
+      } else {
+        // Guest user - save locally only
         setTestAttempts(prev => [attempt, ...prev]);
+        showWarning('📱 Guest Mode\n\nResults saved locally only.\n\nSign in to submit results online and sync across devices.');
       }
-    } else {
-      // Guest user - save locally only
-      setTestAttempts(prev => [attempt, ...prev]);
-      showWarning('📱 Guest Mode\n\nResults saved locally only.\n\nSign in to submit results online and sync across devices.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const clearUserAnswers = () => {
     setUserAnswers([]);
-    setSubmittedAttempts(new Set());
-    setAttemptSaved(false);
+    setIsSubmitting(false);
   };
 
   return (

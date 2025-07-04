@@ -8,19 +8,21 @@ import { networkService } from '../lib/supabase';
 const Results: React.FC = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string }>();
   const navigate = useNavigate();
-  const { userAnswers, addTestAttempt, currentAttemptId } = useQuiz();
+  const { userAnswers, addTestAttempt, currentAttemptId, clearUserAnswers } = useQuiz();
   const { showWarning, showInfo } = useToast();
   const [results, setResults] = useState<any>(null);
   const [test, setTest] = useState<any>(null);
-  const [attemptSaved, setAttemptSaved] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     const loadTestAndCalculateResults = async () => {
-      // Prevent multiple executions
-      if (attemptSaved) {
+      // Prevent multiple executions while processing
+      if (isProcessing) {
         return;
       }
+      
+      setIsProcessing(true);
       
       try {
         // Get test data from cache first
@@ -92,9 +94,8 @@ const Results: React.FC = () => {
 
         setResults(resultData);
 
-        // Save to history only once
-        if (currentAttemptId && userAnswers.length > 0) {
-          setAttemptSaved(true); // Prevent multiple submissions
+        // Save to history
+        if (currentAttemptId && userAnswers.length > 0 && !isProcessing) {
           
           const attempt = {
             id: currentAttemptId,
@@ -113,9 +114,10 @@ const Results: React.FC = () => {
           // Add attempt with proper error handling
           try {
             await addTestAttempt(attempt);
+            // Clear answers after successful submission to prevent re-submission
+            clearUserAnswers();
           } catch (error) {
             console.error('Failed to save attempt:', error);
-            // Don't reset attemptSaved to prevent infinite retries
           }
           
           if (isOnline) {
@@ -125,6 +127,8 @@ const Results: React.FC = () => {
       } catch (error) {
         console.error('Error calculating results:', error);
         navigate('/quiz-selection');
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -141,7 +145,6 @@ const Results: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [testId, testType, userAnswers, navigate, addTestAttempt, currentAttemptId, attemptSaved, isOnline, showWarning, showInfo]);
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-400';
