@@ -169,13 +169,24 @@ const Quiz: React.FC = () => {
   }, [currentQuestionIndex]);
 
   const handleSubmit = useCallback(() => {
-    if (confirm('Are you sure you want to submit the test?')) {
+    // Check if online before allowing submission
+    if (!navigator.onLine) {
+      alert('Internet connection required to submit test. Please connect to the internet and try again.');
+      return;
+    }
+    
+    if (confirm('Are you sure you want to submit the test? Make sure you have a stable internet connection.')) {
       navigate(`/results/${testType}/${testId}`);
     }
   }, [navigate, testType, testId]);
 
   const handleTimeUp = useCallback(() => {
-    alert('Time is up! Submitting the test.');
+    if (!navigator.onLine) {
+      alert('Time is up! However, internet connection is required to submit. Please connect and submit manually.');
+      return;
+    }
+    
+    alert('Time is up! Submitting the test automatically.');
     navigate(`/results/${testType}/${testId}`);
   }, [navigate, testType, testId]);
 

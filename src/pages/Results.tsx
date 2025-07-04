@@ -89,6 +89,8 @@ const Results: React.FC = () => {
 
         // Save to history only once
         if (!attemptSaved && currentAttemptId && userAnswers.length > 0) {
+          setAttemptSaved(true); // Set this first to prevent multiple submissions
+          
           const attempt = {
             id: currentAttemptId,
             testId: testId!,
@@ -104,11 +106,8 @@ const Results: React.FC = () => {
           };
 
           await addTestAttempt(attempt);
-          setAttemptSaved(true);
           
-          if (!isOnline) {
-            showWarning('Results saved locally. Will upload when internet is available.');
-          } else {
+          if (isOnline) {
             showInfo('Results saved successfully!');
           }
         }

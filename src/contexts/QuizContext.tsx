@@ -134,67 +134,29 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addTestAttempt = async (attempt: TestAttempt) => {
     if (user) {
-      // Prevent duplicate submissions using attempt ID
-      if (submittedAttempts.has(attempt.id)) {
-        console.log('Attempt already submitted, skipping duplicate');
-        return;
-      }
-      
-      // Mark as submitted immediately to prevent duplicates
-      setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
-      
       try {
+        // Prevent duplicate submissions using attempt ID
+        if (submittedAttempts.has(attempt.id)) {
+          console.log('Attempt already submitted, skipping duplicate');
+          return;
+        }
+        
         // Prevent duplicate submissions
         if (attemptSaved) {
           console.log('Attempt already saved, skipping duplicate submission');
           return;
         }
         
-        // Try to save online first
-        if (networkService.isOnline()) {
-          const savedAttempt = await attemptService.saveAttempt({
-            testId: attempt.testId,
-            testType: attempt.testType,
-            testName: attempt.testName,
-            score: attempt.score,
-            totalMarks: attempt.totalMarks,
-            percentage: attempt.percentage,
-            duration: attempt.duration,
-            sectionWiseScore: attempt.sectionWiseScore,
-            userAnswers: userAnswers.map(answer => ({
-              questionId: answer.questionId,
-              selectedAnswer: answer.selectedAnswer,
-              isCorrect: answer.isCorrect,
-              marks: answer.marks
-            }))
-          }, user.id);
-
-          if (savedAttempt) {
-            const formattedAttempt = {
-              id: savedAttempt.id,
-              testId: savedAttempt.test_id,
-              testType: savedAttempt.test_type as 'navodaya' | 'sainik',
-              testName: savedAttempt.test_name,
-              score: savedAttempt.score,
-              totalMarks: savedAttempt.total_marks,
-              percentage: savedAttempt.percentage,
-              date: savedAttempt.completed_at,
-              duration: savedAttempt.duration,
-              sectionWiseScore: savedAttempt.section_wise_score
-            };
-
-            setTestAttempts(prev => [formattedAttempt, ...prev]);
-            setAttemptSaved(true);
-            showSuccess('Test results saved successfully!');
-          }
-        } else {
-          throw new Error('No internet connection');
-        }
-      } catch (error: any) {
-        console.error('Error saving attempt:', error);
+        // Mark as submitted immediately to prevent duplicates
+        setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
         
-        // Save to pending if offline or connection failed
-        attemptService.savePendingAttempt({
+        // Check if online - REQUIRED for submission
+        if (!networkService.isOnline()) {
+          throw new Error('Internet connection required to submit test results');
+        }
+        
+        // Always try to save online for test submissions
+        const savedAttempt = await attemptService.saveAttempt({
           testId: attempt.testId,
           testType: attempt.testType,
           testName: attempt.testName,
@@ -210,22 +172,67 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
             marks: answer.marks
           }))
         }, user.id);
+
+        if (savedAttempt) {
+          const formattedAttempt = {
+            id: savedAttempt.id,
+            testId: savedAttempt.test_id,
+            testType: savedAttempt.test_type as 'navodaya' | 'sainik',
+            testName: savedAttempt.test_name,
+            score: savedAttempt.score,
+            totalMarks: savedAttempt.total_marks,
+            percentage: savedAttempt.percentage,
+            date: savedAttempt.completed_at,
+            duration: savedAttempt.duration,
+            sectionWiseScore: savedAttempt.section_wise_score
+          };
+
+          setTestAttempts(prev => [formattedAttempt, ...prev]);
+          setAttemptSaved(true);
+          showSuccess('Test results submitted successfully!');
+        }
+      } catch (error: any) {
+        console.error('Error saving attempt:', error);
         
-        setHasPendingAttempts(true);
+        // Remove from submitted attempts if submission failed
+        setSubmittedAttempts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(attempt.id);
+          return newSet;
+        });
         
-        if (error.message.includes('internet') || error.message.includes('connection')) {
-          showWarning('Results saved locally. Will upload when internet is available.');
+        if (error.message.includes('internet') || error.message.includes('connection') || !networkService.isOnline()) {
+          // Save to pending only as a backup, but show error for submission failure
+          attemptService.savePendingAttempt({
+            testId: attempt.testId,
+            testType: attempt.testType,
+            testName: attempt.testName,
+            score: attempt.score,
+            totalMarks: attempt.totalMarks,
+            percentage: attempt.percentage,
+            duration: attempt.duration,
+            sectionWiseScore: attempt.sectionWiseScore,
+            userAnswers: userAnswers.map(answer => ({
+              questionId: answer.questionId,
+              selectedAnswer: answer.selectedAnswer,
+              isCorrect: answer.isCorrect,
+              marks: answer.marks
+            }))
+          }, user.id);
+          
+          setHasPendingAttempts(true);
+          showError('Failed to submit test results online. Results saved locally for later upload.');
         } else {
-          showError('Failed to save results online. Saved locally for later upload.');
+          showError(`Failed to submit test results: ${error.message}`);
         }
         
-        // Add to local state for immediate display
+        // Add to local state for immediate display even if submission failed
         setTestAttempts(prev => [attempt, ...prev]);
       }
     } else {
       // Guest user - save locally only
       setTestAttempts(prev => [attempt, ...prev]);
-      showInfo('Results saved locally (guest mode)');
+      showWarning('Results saved locally (guest mode). Sign in to submit results online.');
     }
   };
 
