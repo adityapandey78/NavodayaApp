@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Wifi, WifiOff, Upload, AlertCircle, Target, Clock, Star, Zap } from 'lucide-react';
+import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Wifi, WifiOff, Upload, AlertCircle, Target, Clock, Star, Zap, User } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { networkService } from '../lib/supabase';
@@ -9,6 +10,7 @@ import { networkService } from '../lib/supabase';
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { darkMode } = useTheme();
+  const { user } = useAuth();
   const { testAttempts, hasPendingAttempts, syncPendingAttempts } = useQuiz();
   const { showError, showInfo } = useToast();
   const [joke, setJoke] = useState('');
@@ -124,6 +126,40 @@ const Dashboard: React.FC = () => {
                 }`}
               >
                 {isOnline ? 'Upload Now' : 'No Internet'}
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Sign In Button for Guest Users */}
+        {!user && (
+          <div className={`rounded-2xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-white/20' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <User size={20} className="text-white" />
+                </div>
+                <div>
+                  <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Sign In to Save Progress
+                  </p>
+                  <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                    Sync your results across devices
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/auth')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${
+                  darkMode
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                }`}
+              >
+                Sign In
               </button>
             </div>
           </div>
