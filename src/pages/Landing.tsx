@@ -34,15 +34,18 @@ const Landing: React.FC = () => {
           <div className="absolute -top-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
             <GraduationCap size={16} className="text-white" />
           </div>
-          {/* Additional sparkles around the image */}
-          <div className="absolute -top-4 -left-4 w-6 h-6 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
-            <Sparkles size={12} className="text-white" />
+          {/* Decorative elements around the image */}
+          <div className="absolute -top-6 -left-6 text-pink-400">
+            <Sparkles size={24} />
           </div>
-          <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
-            <Sparkles size={16} className="text-white" />
+          <div className="absolute -bottom-6 -right-6 text-cyan-400">
+            <Star size={20} />
           </div>
-          <div className="absolute -bottom-2 -left-2 w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-            <Star size={10} className="text-white" />
+          <div className="absolute -bottom-2 -left-8 text-yellow-400">
+            <Sparkles size={18} />
+          </div>
+          <div className="absolute -top-8 right-2 text-purple-400">
+            <Star size={16} />
           </div>
         </div>
 
@@ -101,6 +104,49 @@ const Landing: React.FC = () => {
                 <span>Sign In / Sign Up</span>
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Anime-style decorative elements scattered around */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          {/* Top left corner */}
+          <div className="absolute top-20 left-4 text-pink-400 opacity-60">
+            <div className="text-2xl">✨</div>
+          </div>
+          <div className="absolute top-32 left-12 text-purple-400 opacity-50">
+            <div className="text-xl">🌟</div>
+          </div>
+          
+          {/* Top right corner */}
+          <div className="absolute top-24 right-8 text-cyan-400 opacity-60">
+            <div className="text-2xl">⭐</div>
+          </div>
+          <div className="absolute top-40 right-16 text-yellow-400 opacity-50">
+            <div className="text-xl">💫</div>
+          </div>
+          
+          {/* Bottom left corner */}
+          <div className="absolute bottom-32 left-6 text-green-400 opacity-60">
+            <div className="text-2xl">🎯</div>
+          </div>
+          <div className="absolute bottom-48 left-16 text-blue-400 opacity-50">
+            <div className="text-xl">📚</div>
+          </div>
+          
+          {/* Bottom right corner */}
+          <div className="absolute bottom-28 right-10 text-orange-400 opacity-60">
+            <div className="text-2xl">🚀</div>
+          </div>
+          <div className="absolute bottom-44 right-4 text-red-400 opacity-50">
+            <div className="text-xl">🎊</div>
+          </div>
+          
+          {/* Floating elements */}
+          <div className="absolute top-1/3 left-8 text-indigo-400 opacity-40 animate-pulse">
+            <div className="text-lg">🌈</div>
+          </div>
+          <div className="absolute top-2/3 right-12 text-pink-400 opacity-40 animate-pulse">
+            <div className="text-lg">🎨</div>
           </div>
         </div>
 
