@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { testService, networkService } from '../lib/supabase';
 import { TestData, Question, Section } from '../types/quiz';
 
-const Admin: React.FC = () => {
+export default function Admin() {
   const { user } = useAuth();
   const { showError, showSuccess, showWarning, showInfo } = useToast();
   const { darkMode } = useTheme();
@@ -686,4 +686,3 @@ const Admin: React.FC = () => {
       </div>
     </div>
   );
-};
