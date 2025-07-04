@@ -181,10 +181,10 @@ const Quiz: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg font-medium">Loading test...</p>
+          <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-white/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-sm md:text-lg font-medium">Loading test...</p>
         </div>
       </div>
     );
@@ -192,14 +192,14 @@ const Quiz: React.FC = () => {
 
   if (error || !test || allQuestions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-500 via-pink-500 to-purple-600 flex items-center justify-center p-4">
-        <div className="text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-          <p className="text-white text-lg font-medium mb-4">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <div className="text-center glass-dark rounded-2xl p-6 md:p-8 border border-white/20">
+          <p className="text-white text-sm md:text-lg font-medium mb-4">
             {error || 'Test not found or has no questions'}
           </p>
           <button
             onClick={() => navigate('/quiz-selection')}
-            className="bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg font-medium transition-colors text-sm md:text-base"
           >
             Back to Tests
           </button>
@@ -210,9 +210,9 @@ const Quiz: React.FC = () => {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white text-lg font-medium">Loading question...</p>
+          <p className="text-white text-sm md:text-lg font-medium">Loading question...</p>
         </div>
       </div>
     );
@@ -222,24 +222,24 @@ const Quiz: React.FC = () => {
   const hasHindiContent = currentQuestion.questionHi && currentQuestion.questionHi !== currentQuestion.question;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-white">
+      <div className="glass-dark border-b border-white/10 p-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between max-w-7xl mx-auto space-y-4 md:space-y-0">
+          <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
+            <h1 className="text-base md:text-xl font-bold text-white">
               {test.testName}
             </h1>
             {hasHindiContent && (
               <button
                 onClick={() => setShowHindi(!showHindi)}
-                className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-xs md:text-sm font-medium transition-colors self-start ${
                   showHindi 
                     ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
                     : 'bg-white/10 text-white/80 border border-white/20'
                 }`}
               >
-                <Globe size={16} />
+                <Globe size={14} />
                 <span>{showHindi ? 'हिंदी' : 'Hindi'}</span>
               </button>
             )}
@@ -247,8 +247,8 @@ const Quiz: React.FC = () => {
           <Timer duration={test.durationInMinutes} onTimeUp={handleTimeUp} />
         </div>
         
-        <div className="mt-4 max-w-4xl mx-auto">
-          <div className="flex items-center justify-between text-sm text-white/80 mb-2">
+        <div className="mt-4 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between text-xs md:text-sm text-white/80 mb-2">
             <span>Question {currentQuestionIndex + 1} of {allQuestions.length}</span>
             <span>{answeredQuestions}/{allQuestions.length} answered</span>
           </div>
@@ -257,20 +257,20 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Question */}
-      <div className="p-4 max-w-4xl mx-auto">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 mb-6">
+      <div className="p-4 max-w-7xl mx-auto">
+        <div className="glass-dark rounded-2xl p-4 md:p-8 border border-white/10 mb-6">
           <div className="mb-6">
-            <span className="inline-block px-4 py-2 bg-white/20 text-white text-sm rounded-full mb-4 font-medium">
+            <span className="inline-block px-3 py-1 md:px-4 md:py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 text-xs md:text-sm rounded-full mb-4 font-medium border border-purple-500/30">
               {currentQuestion.sectionName}
             </span>
-            <p className="text-xl font-medium text-white leading-relaxed">
+            <p className="text-sm md:text-xl font-medium text-white leading-relaxed">
               {showHindi && currentQuestion.questionHi 
                 ? currentQuestion.questionHi 
                 : currentQuestion.question}
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {currentQuestion.options.map((option: string, index: number) => {
               const optionText = showHindi && currentQuestion.optionsHi 
                 ? currentQuestion.optionsHi[index] 
@@ -282,26 +282,26 @@ const Quiz: React.FC = () => {
                 <button
                   key={`${currentQuestion.id}-${index}`}
                   onClick={() => handleAnswerSelect(option)}
-                  className={`w-full p-6 rounded-xl border-2 text-left transition-all duration-300 ${
+                  className={`w-full p-4 md:p-6 rounded-xl border-2 text-left transition-all duration-300 ${
                     isSelected
                       ? 'border-cyan-400 bg-gradient-to-r from-cyan-400/20 to-blue-500/20 text-white shadow-lg transform scale-[1.02]'
-                      : 'border-white/20 hover:border-white/40 bg-white/10 hover:bg-white/15 text-white hover:shadow-md'
+                      : 'border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/10 text-white hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  <div className="flex items-center space-x-3 md:space-x-4">
+                    <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                       isSelected
                         ? 'border-cyan-400 bg-cyan-400'
                         : 'border-white/40'
                     }`}>
                       {isSelected && (
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                        <div className="w-2 h-2 md:w-3 md:h-3 bg-white rounded-full"></div>
                       )}
                     </div>
-                    <span className="font-bold text-cyan-300 text-lg">
+                    <span className="font-bold text-cyan-300 text-sm md:text-lg">
                       {String.fromCharCode(65 + index)}.
                     </span>
-                    <span className="flex-1 text-lg">{optionText}</span>
+                    <span className="flex-1 text-sm md:text-lg">{optionText}</span>
                   </div>
                 </button>
               );
@@ -314,9 +314,9 @@ const Quiz: React.FC = () => {
           <button
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0}
-            className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all duration-300 border border-white/20"
+            className="flex items-center space-x-2 px-4 py-2 md:px-6 md:py-3 rounded-xl bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all duration-300 border border-white/20 text-sm md:text-base"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={16} />
             <span className="font-medium">Previous</span>
           </button>
 
@@ -324,18 +324,18 @@ const Quiz: React.FC = () => {
             {currentQuestionIndex === allQuestions.length - 1 ? (
               <button
                 onClick={handleSubmit}
-                className="flex items-center space-x-2 px-8 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="flex items-center space-x-2 px-6 py-2 md:px-8 md:py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-base"
               >
-                <Flag size={20} />
+                <Flag size={16} />
                 <span>Submit Test</span>
               </button>
             ) : (
               <button
                 onClick={handleNext}
-                className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="flex items-center space-x-2 px-4 py-2 md:px-6 md:py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-base"
               >
                 <span className="font-medium">Next</span>
-                <ChevronRight size={20} />
+                <ChevronRight size={16} />
               </button>
             )}
           </div>

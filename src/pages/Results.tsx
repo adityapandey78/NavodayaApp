@@ -148,99 +148,99 @@ const Results: React.FC = () => {
 
   if (!results || !test) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg font-medium">Calculating results...</p>
+          <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-white/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-sm md:text-lg font-medium">Calculating results...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-600 via-purple-600 to-blue-600 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Connection Status Banner */}
         {!isOnline && (
-          <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-4">
+          <div className="glass-dark rounded-2xl p-4 border border-yellow-500/30">
             <div className="flex items-center space-x-3">
-              <WifiOff size={24} className="text-yellow-300" />
+              <WifiOff size={20} className="text-yellow-400" />
               <div>
-                <p className="font-bold text-yellow-200">Offline Mode</p>
-                <p className="text-yellow-300 text-sm">Results saved locally. Will upload when internet is available.</p>
+                <p className="font-bold text-yellow-200 text-sm md:text-base">Offline Mode</p>
+                <p className="text-yellow-300 text-xs md:text-sm">Results saved locally. Will upload when internet is available.</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Header */}
-        <div className="text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-          <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-            <Trophy size={48} className="text-white" />
+        <div className="text-center glass-dark rounded-2xl p-6 md:p-8 border border-white/10">
+          <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl pulse-glow">
+            <Trophy size={32} className="text-white" />
           </div>
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <h1 className="text-3xl font-bold text-white">Test Results</h1>
+            <h1 className="text-xl md:text-3xl font-bold text-white">Test Results</h1>
             {isOnline ? (
-              <Wifi size={20} className="text-green-300" />
+              <Wifi size={16} className="text-green-400" />
             ) : (
-              <WifiOff size={20} className="text-red-300" />
+              <WifiOff size={16} className="text-red-400" />
             )}
           </div>
-          <p className="text-white/80 text-lg">{test?.testName}</p>
+          <p className="text-white/80 text-sm md:text-lg">{test?.testName}</p>
         </div>
 
         {/* Score Card */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-          <div className="text-center mb-8">
-            <div className={`text-7xl font-bold mb-4 ${getScoreColor(results.percentage)}`}>
+        <div className="glass-dark rounded-2xl p-6 md:p-8 border border-white/10">
+          <div className="text-center mb-6 md:mb-8">
+            <div className={`text-4xl md:text-7xl font-bold mb-4 ${getScoreColor(results.percentage)}`}>
               {results.percentage}%
             </div>
-            <p className="text-2xl font-bold text-white mb-4">
+            <p className="text-lg md:text-2xl font-bold text-white mb-4">
               {getPerformanceMessage(results.percentage)}
             </p>
-            <p className="text-white/80 text-lg">
+            <p className="text-white/80 text-sm md:text-lg">
               {results.totalScore} / {results.totalMarks} marks
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 mb-8">
-            <div className="text-center p-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl">
-              <div className="text-3xl font-bold text-white">
+          <div className="grid grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
+            <div className="text-center p-3 md:p-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl">
+              <div className="text-lg md:text-3xl font-bold text-white">
                 {results.correct}
               </div>
-              <p className="text-white/90 font-medium">Correct</p>
+              <p className="text-white/90 font-medium text-xs md:text-base">Correct</p>
             </div>
-            <div className="text-center p-6 bg-gradient-to-br from-red-400 to-pink-500 rounded-2xl">
-              <div className="text-3xl font-bold text-white">
+            <div className="text-center p-3 md:p-6 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl">
+              <div className="text-lg md:text-3xl font-bold text-white">
                 {results.incorrect}
               </div>
-              <p className="text-white/90 font-medium">Incorrect</p>
+              <p className="text-white/90 font-medium text-xs md:text-base">Incorrect</p>
             </div>
-            <div className="text-center p-6 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl">
-              <div className="text-3xl font-bold text-white">
+            <div className="text-center p-3 md:p-6 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl">
+              <div className="text-lg md:text-3xl font-bold text-white">
                 {results.unanswered}
               </div>
-              <p className="text-white/90 font-medium">Unanswered</p>
+              <p className="text-white/90 font-medium text-xs md:text-base">Unanswered</p>
             </div>
           </div>
         </div>
 
         {/* Section-wise Performance */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-          <h2 className="text-xl font-bold text-white mb-6">Section-wise Performance</h2>
-          <div className="space-y-4">
+        <div className="glass-dark rounded-2xl p-4 md:p-6 border border-white/10">
+          <h2 className="text-base md:text-xl font-bold text-white mb-4 md:mb-6">Section-wise Performance</h2>
+          <div className="space-y-3 md:space-y-4">
             {Object.entries(results.sectionWiseScore).map(([sectionName, scores]: [string, any]) => {
               const percentage = Math.round((scores.score / scores.total) * 100);
               return (
-                <div key={sectionName} className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
+                <div key={sectionName} className="flex items-center justify-between p-3 md:p-4 bg-white/5 rounded-xl">
                   <div>
-                    <p className="font-bold text-white">{sectionName}</p>
-                    <p className="text-white/80 text-sm">
+                    <p className="font-bold text-white text-sm md:text-base">{sectionName}</p>
+                    <p className="text-white/80 text-xs md:text-sm">
                       {scores.score}/{scores.total} marks
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className={`text-xl font-bold ${getScoreColor(percentage)}`}>
+                    <p className={`text-base md:text-xl font-bold ${getScoreColor(percentage)}`}>
                       {percentage}%
                     </p>
                   </div>
@@ -254,17 +254,17 @@ const Results: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
+            className="flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white py-3 md:py-4 px-4 md:px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-lg"
           >
-            <Home size={24} />
-            <span className="text-lg">Go Home</span>
+            <Home size={20} />
+            <span>Go Home</span>
           </button>
           <button
             onClick={() => navigate('/quiz-selection')}
-            className="flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-500 to-pink-400 hover:from-purple-600 hover:to-pink-500 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
+            className="flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 md:py-4 px-4 md:px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-lg"
           >
-            <RotateCcw size={24} />
-            <span className="text-lg">Take Another</span>
+            <RotateCcw size={20} />
+            <span>Take Another</span>
           </button>
         </div>
       </div>

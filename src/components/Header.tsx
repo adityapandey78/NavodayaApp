@@ -22,18 +22,18 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-md">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-lg border-b border-white/10">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
           {canGoBack && (
             <button
               onClick={() => navigate(-1)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 rounded-full hover:bg-white/10 transition-colors"
             >
-              <ArrowLeft size={20} className="text-gray-600 dark:text-gray-300" />
+              <ArrowLeft size={18} className="text-gray-300" />
             </button>
           )}
-          <h1 className="text-lg font-semibold text-gray-800 dark:text-white">
+          <h1 className="text-sm md:text-lg font-semibold text-white">
             {getPageTitle()}
           </h1>
         </div>
@@ -41,19 +41,19 @@ const Header: React.FC = () => {
         <div className="flex items-center space-x-2">
           <button
             onClick={toggleDarkMode}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
           >
             {darkMode ? 
-              <Sun size={20} className="text-yellow-500" /> : 
-              <Moon size={20} className="text-gray-600" />
+              <Sun size={18} className="text-yellow-500" /> : 
+              <Moon size={18} className="text-gray-300" />
             }
           </button>
           {location.pathname === '/dashboard' && (
             <button
               onClick={() => navigate('/settings')}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 rounded-full hover:bg-white/10 transition-colors"
             >
-              <Settings size={20} className="text-gray-600 dark:text-gray-300" />
+              <Settings size={18} className="text-gray-300" />
             </button>
           )}
         </div>
