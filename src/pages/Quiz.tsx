@@ -152,7 +152,7 @@ const Quiz: React.FC = () => {
     
     // Immediate navigation to prevent freezing
     navigate(`/results/${testType}/${testId}`);
-  }, [navigate, testType, testId]);
+  }, [navigate, testType, testId, showError]);
 
   const handleTimeUp = useCallback(() => {
     if (!navigator.onLine) {
@@ -162,7 +162,7 @@ const Quiz: React.FC = () => {
     
     // Immediate navigation to prevent freezing
     navigate(`/results/${testType}/${testId}`);
-  }, [navigate, testType, testId]);
+  }, [navigate, testType, testId, showError]);
 
   if (isLoading) {
     return (
@@ -249,10 +249,11 @@ const Quiz: React.FC = () => {
               {currentQuestion.sectionName}
             </span>
             <div className="text-xs sm:text-sm md:text-lg font-medium text-white leading-relaxed">
-            <div className="text-sm sm:text-base md:text-lg font-medium text-white leading-relaxed">
-              {showHindi && currentQuestion.questionHi 
-                ? currentQuestion.questionHi 
-                : currentQuestion.question}
+              <div className="text-sm sm:text-base md:text-lg font-medium text-white leading-relaxed">
+                {showHindi && currentQuestion.questionHi 
+                  ? currentQuestion.questionHi 
+                  : currentQuestion.question}
+              </div>
             </div>
           </div>
 
