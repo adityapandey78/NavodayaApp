@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 const Landing: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { darkMode } = useTheme();
 
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-300 ${
