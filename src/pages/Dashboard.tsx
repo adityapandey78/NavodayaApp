@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Wifi, WifiOff, Upload, AlertCircle, Target, Clock, Star, Zap } from 'lucide-react';
+import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Wifi, WifiOff, Upload, AlertCircle, Target, Clock, Star, Zap, Sparkles } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -206,20 +206,18 @@ const Dashboard: React.FC = () => {
                 }`}>
                   <GraduationCap size={16} className="text-white" />
                 </div>
-                {/* Additional sparkles */}
-                <div className={`absolute -top-4 -left-4 w-6 h-6 rounded-full flex items-center justify-center ${
-                  darkMode 
-                    ? 'bg-gradient-to-r from-pink-400 to-purple-500' 
-                    : 'bg-gradient-to-r from-pink-300 to-purple-400'
-                }`}>
-                  <Star size={12} className="text-white" />
+                {/* Decorative elements */}
+                <div className="absolute -top-6 -left-6 text-pink-400">
+                  <Star size={24} />
                 </div>
-                <div className={`absolute -bottom-4 -right-4 w-6 h-6 rounded-full flex items-center justify-center ${
-                  darkMode 
-                    ? 'bg-gradient-to-r from-cyan-400 to-blue-500' 
-                    : 'bg-gradient-to-r from-cyan-300 to-blue-400'
-                }`}>
-                  <Zap size={12} className="text-white" />
+                <div className="absolute -bottom-6 -right-6 text-cyan-400">
+                  <Zap size={20} />
+                </div>
+                <div className="absolute -top-8 right-2 text-yellow-400">
+                  <Sparkles size={18} />
+                </div>
+                <div className="absolute -bottom-2 -left-8 text-purple-400">
+                  <Star size={16} />
                 </div>
               </div>
             </div>
@@ -373,6 +371,41 @@ const Dashboard: React.FC = () => {
             </div>
             <p className="text-white leading-relaxed text-xs md:text-sm">{joke}</p>
           </div>
+        </div>
+      </div>
+      
+      {/* Anime-style decorative elements scattered around */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Top corners */}
+        <div className="absolute top-20 left-4 text-blue-400 opacity-50">
+          <div className="text-2xl">🎓</div>
+        </div>
+        <div className="absolute top-32 right-8 text-purple-400 opacity-60">
+          <div className="text-xl">📊</div>
+        </div>
+        
+        {/* Side elements */}
+        <div className="absolute top-1/3 left-2 text-green-400 opacity-40 animate-pulse">
+          <div className="text-lg">🏆</div>
+        </div>
+        <div className="absolute top-1/2 right-4 text-yellow-400 opacity-50">
+          <div className="text-xl">⚡</div>
+        </div>
+        
+        {/* Bottom corners */}
+        <div className="absolute bottom-32 left-6 text-cyan-400 opacity-60">
+          <div className="text-2xl">🎯</div>
+        </div>
+        <div className="absolute bottom-28 right-10 text-pink-400 opacity-50">
+          <div className="text-xl">🌟</div>
+        </div>
+        
+        {/* Floating elements */}
+        <div className="absolute top-2/3 left-8 text-orange-400 opacity-40 animate-pulse">
+          <div className="text-lg">📚</div>
+        </div>
+        <div className="absolute bottom-1/3 right-12 text-indigo-400 opacity-40">
+          <div className="text-lg">🚀</div>
         </div>
       </div>
     </div>
