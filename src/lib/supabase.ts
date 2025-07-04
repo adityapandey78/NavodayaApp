@@ -127,7 +127,11 @@ const networkService = {
         .from('tests')
         .select('id')
         .limit(1)
-        .single();
+        .single()
+        .catch((error: any) => {
+          // Mark promise as handled to prevent unhandled rejection logs
+          throw error;
+        });
       
       await Promise.race([connectionPromise, timeoutPromise]);
       
