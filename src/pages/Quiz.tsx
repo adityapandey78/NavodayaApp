@@ -239,7 +239,6 @@ const Quiz: React.FC = () => {
           </div>
           <ProgressBar current={currentQuestionIndex + 1} total={allQuestions.length} />
         </div>
-      </div>
 
       {/* Question */}
       <div className="p-3 sm:p-4 max-w-4xl mx-auto">
@@ -328,6 +327,7 @@ const Quiz: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
