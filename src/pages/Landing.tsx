@@ -150,8 +150,10 @@ const Landing: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <p className="text-white/60 text-xs md:text-sm">
-          Made with ❤️ by Bhaiya for your success
+        <div className="space-y-3">
+          <p className="text-white/60 text-xs md:text-sm">
+            Made with ❤️ by Bhaiya for your success
+          </p>
 
           {/* Sign In for logged in users */}
           {user && (
@@ -168,7 +170,7 @@ const Landing: React.FC = () => {
               </div>
             </div>
           )}
-        </p>
+        </div>
       </div>
     </div>
   );
