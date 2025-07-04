@@ -1,11 +1,29 @@
 import React from 'react';
-import { Moon, Sun, User, Shield } from 'lucide-react';
+import { Moon, Sun, User, Shield, LogOut } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useQuiz } from '../contexts/QuizContext';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
 
 const Settings: React.FC = () => {
   const { darkMode, toggleDarkMode } = useTheme();
+  const { user, signOut } = useAuth();
   const { testAttempts } = useQuiz();
+  const navigate = useNavigate();
+  const { showSuccess } = useToast();
+
+  const handleLogout = async () => {
+    if (confirm('Are you sure you want to logout?')) {
+      try {
+        await signOut();
+        showSuccess('Logged out successfully');
+        navigate('/');
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
+  };
 
   return (
     <div className={`min-h-screen p-4 transition-colors duration-300 ${
@@ -38,8 +56,12 @@ const Settings: React.FC = () => {
               <User size={32} className="text-white" />
             </div>
             <div>
-              <h2 className={`text-lg md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Hello, Satyam!</h2>
-              <p className={`text-sm md:text-lg ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Keep up the great work</p>
+              <h2 className={`text-lg md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                {user ? `Hello, ${user.email.split('@')[0]}!` : 'Hello, Satyam!'}
+              </h2>
+              <p className={`text-sm md:text-lg ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                {user ? user.email : 'Guest User - Keep up the great work'}
+              </p>
             </div>
           </div>
           
@@ -62,6 +84,70 @@ const Settings: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Account Section */}
+        {user && (
+          <div className={`rounded-2xl p-4 md:p-6 border ${
+            darkMode 
+              ? 'glass-dark border-white/20' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
+            <h2 className={`text-lg md:text-xl font-bold mb-4 md:mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Account</h2>
+            
+            <div className="space-y-4">
+              <div className={`flex items-center justify-between p-3 md:p-4 rounded-xl ${
+                darkMode ? 'bg-white/10' : 'bg-gray-100'
+              }`}>
+                <div className="flex items-center space-x-4">
+                  <LogOut size={20} className="text-red-400" />
+                  <div>
+                    <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Logout
+                    </p>
+                    <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                      Sign out of your account
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium transition-all duration-300 text-sm md:text-base"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Guest User Sign In */}
+        {!user && (
+          <div className={`rounded-2xl p-4 md:p-6 border ${
+            darkMode 
+              ? 'glass-dark border-white/20' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
+            <h2 className={`text-lg md:text-xl font-bold mb-4 md:mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Account</h2>
+            
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto">
+                <User size={32} className="text-white" />
+              </div>
+              <div>
+                <h3 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Guest Mode</h3>
+                <p className={`text-sm md:text-base ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                  Sign in to save your progress online and sync across devices
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/auth')}
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-lg"
+              >
+                Sign In / Sign Up
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Appearance Settings */}
         <div className={`rounded-2xl p-4 md:p-6 border ${

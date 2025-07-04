@@ -137,7 +137,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addTestAttempt = async (attempt: TestAttempt) => {
     // Prevent multiple submissions
-    if (isSubmitting) {
+    if (isSubmitting || testAttempts.some(existing => existing.id === attempt.id)) {
       console.log('Already submitting, skipping duplicate submission');
       return;
     }
@@ -186,7 +186,9 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Add to beginning and sort by date
             setTestAttempts(prev => {
-              const updated = [formattedAttempt, ...prev];
+              // Check for duplicates before adding
+              const filtered = prev.filter(existing => existing.id !== formattedAttempt.id);
+              const updated = [formattedAttempt, ...filtered];
               return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             });
             showSuccess('Test results submitted successfully!');
@@ -221,14 +223,18 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Add to local state for immediate display even if submission failed
           setTestAttempts(prev => {
-            const updated = [attempt, ...prev];
+            // Check for duplicates before adding
+            const filtered = prev.filter(existing => existing.id !== attempt.id);
+            const updated = [attempt, ...filtered];
             return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           });
         }
       } else {
         // Guest user - save locally only
         setTestAttempts(prev => {
-          const updated = [attempt, ...prev];
+          // Check for duplicates before adding
+          const filtered = prev.filter(existing => existing.id !== attempt.id);
+          const updated = [attempt, ...filtered];
           return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         });
         showWarning('📱 Guest Mode\n\nResults saved locally only.\n\nSign in to submit results online and sync across devices.');
@@ -241,6 +247,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearUserAnswers = () => {
     setUserAnswers([]);
     setIsSubmitting(false);
+    setCurrentAttemptId(null);
   };
 
   return (

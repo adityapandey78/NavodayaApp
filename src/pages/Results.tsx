@@ -17,11 +17,12 @@ const Results: React.FC = () => {
   const [hasProcessed, setHasProcessed] = useState(false);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
   const [allQuestions, setAllQuestions] = useState<any[]>([]);
+  const [attemptId] = useState(() => `${testId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
 
   useEffect(() => {
     const loadTestAndCalculateResults = async () => {
       // Prevent multiple executions
-      if (isProcessing || hasProcessed || !userAnswers || userAnswers.length === 0) {
+      if (isProcessing || hasProcessed || !userAnswers || userAnswers.length === 0 || !currentAttemptId) {
         return;
       }
       
@@ -111,7 +112,7 @@ const Results: React.FC = () => {
         // Save to history only once
         if (currentAttemptId && userAnswers.length > 0) {
           const attempt = {
-            id: currentAttemptId,
+            id: attemptId, // Use unique ID to prevent duplicates
             testId: testId!,
             testType: testType as 'navodaya' | 'sainik',
             testName: foundTest.testName,
