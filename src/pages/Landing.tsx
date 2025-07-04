@@ -2,13 +2,18 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, ArrowRight, Star, Sparkles, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className={`min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-black' 
+        : 'bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600'
+    }`}>
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-60 h-60 md:w-80 md:h-80 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
@@ -18,16 +23,34 @@ const Landing: React.FC = () => {
       <div className="max-w-md w-full space-y-6 md:space-y-8 text-center relative z-10">
         {/* Avatar/Logo */}
         <div className="relative">
-          <div className="w-24 h-24 md:w-28 md:h-28 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl float-animation pulse-glow">
-            <GraduationCap size={40} className="text-white" />
+          <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden mx-auto mb-6 shadow-2xl float-animation pulse-glow border-4 border-white/20">
+            <img 
+              src="/5aca0d6c-7f62-420d-9299-e85108fa6c39 copy.png" 
+              alt="Satyam" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="absolute -top-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+            <GraduationCap size={16} className="text-white" />
+          </div>
+          {/* Additional sparkles around the image */}
+          <div className="absolute -top-4 -left-4 w-6 h-6 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
+            <Sparkles size={12} className="text-white" />
+          </div>
+          <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
             <Sparkles size={16} className="text-white" />
+          </div>
+          <div className="absolute -bottom-2 -left-2 w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
+            <Star size={10} className="text-white" />
           </div>
         </div>
 
         {/* Welcome Message */}
-        <div className="space-y-4 md:space-y-6 glass-dark rounded-2xl p-6 md:p-8 border border-white/20">
+        <div className={`space-y-4 md:space-y-6 rounded-2xl p-6 md:p-8 border ${
+          darkMode 
+            ? 'glass-dark border-white/20' 
+            : 'bg-white/20 backdrop-blur-lg border-white/30'
+        }`}>
           <h1 className="text-2xl md:text-4xl font-bold text-white">
             👋 Welcome, Satyam!
           </h1>
@@ -67,7 +90,11 @@ const Landing: React.FC = () => {
             {!user && (
               <button
                 onClick={() => navigate('/auth')}
-                className="w-full glass-dark hover:bg-white/20 text-white font-medium py-2 md:py-3 px-4 md:px-6 rounded-xl border border-white/20 transition-all duration-300 flex items-center justify-center space-x-2 text-sm md:text-base"
+                className={`w-full text-white font-medium py-2 md:py-3 px-4 md:px-6 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 text-sm md:text-base ${
+                  darkMode 
+                    ? 'glass-dark hover:bg-white/20 border-white/20' 
+                    : 'bg-white/10 hover:bg-white/20 border-white/30'
+                }`}
               >
                 <User size={16} />
                 <span>Sign In / Sign Up</span>

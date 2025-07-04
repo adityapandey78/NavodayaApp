@@ -34,6 +34,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     type: 'error' | 'success' | 'warning' | 'info' = 'info',
     duration: number = 5000
   ) => {
+    // Prevent duplicate toasts
+    const isDuplicate = toasts.some(toast => 
+      toast.message === message && toast.type === type
+    );
+    
+    if (isDuplicate) {
+      return;
+    }
+    
     const id = Date.now().toString();
     const newToast: Toast = { id, message, type, duration };
     

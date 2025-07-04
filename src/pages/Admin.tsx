@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText, Database, AlertCircle, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { testService, networkService } from '../lib/supabase';
 import { TestData, Question, Section } from '../types/quiz';
 
@@ -318,8 +319,16 @@ const Admin: React.FC = () => {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-500 to-cyan-400 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
+      <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
+        darkMode 
+          ? 'bg-gradient-to-br from-purple-600 via-blue-500 to-cyan-400' 
+          : 'bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600'
+      }`}>
+        <div className={`max-w-md w-full rounded-2xl p-6 md:p-8 border shadow-2xl ${
+          darkMode 
+            ? 'bg-white/10 backdrop-blur-lg border-white/20' 
+            : 'bg-white/20 backdrop-blur-lg border-white/30'
+        }`}>
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield size={40} className="text-white" />
@@ -411,7 +420,11 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
+    <div className={`min-h-screen p-4 transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500' 
+        : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+    }`}>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>

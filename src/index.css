@@ -30,6 +30,13 @@
 /* Dark mode base styles */
 .dark {
   color-scheme: dark;
+  background-color: #000000;
+}
+
+/* Light mode base styles */
+.light {
+  color-scheme: light;
+  background-color: #ffffff;
 }
 
 /* Mobile optimizations */

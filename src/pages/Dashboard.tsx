@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Play, TrendingUp, BookOpen, Award, Smile, GraduationCap, Wifi, WifiOff, Upload, AlertCircle, Target, Clock, Star, Zap } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
 import { useToast } from '../contexts/ToastContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { networkService } from '../lib/supabase';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { darkMode } = useTheme();
   const { testAttempts, hasPendingAttempts, syncPendingAttempts } = useQuiz();
   const { showError, showInfo } = useToast();
   const [joke, setJoke] = useState('');
@@ -71,16 +73,24 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-black text-white' 
+        : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-900'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Connection Status Banner */}
         {!isOnline && (
-          <div className="glass-dark rounded-2xl p-4 border border-red-500/30">
+          <div className={`rounded-2xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-red-500/30' 
+              : 'bg-red-50 border-red-200'
+          }`}>
             <div className="flex items-center space-x-3">
-              <WifiOff size={20} className="text-red-400" />
+              <WifiOff size={20} className={darkMode ? 'text-red-400' : 'text-red-600'} />
               <div>
-                <p className="font-bold text-red-200 text-sm md:text-base">No Internet Connection</p>
-                <p className="text-red-300 text-xs md:text-sm">You can continue taking tests, but results will be saved locally until connection is restored.</p>
+                <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-red-200' : 'text-red-800'}`}>No Internet Connection</p>
+                <p className={`text-xs md:text-sm ${darkMode ? 'text-red-300' : 'text-red-600'}`}>You can continue taking tests, but results will be saved locally until connection is restored.</p>
               </div>
             </div>
           </div>
@@ -88,19 +98,27 @@ const Dashboard: React.FC = () => {
 
         {/* Pending Results Banner */}
         {hasPendingAttempts && (
-          <div className="glass-dark rounded-2xl p-4 border border-yellow-500/30">
+          <div className={`rounded-2xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-yellow-500/30' 
+              : 'bg-yellow-50 border-yellow-200'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Upload size={20} className="text-yellow-400" />
+                <Upload size={20} className={darkMode ? 'text-yellow-400' : 'text-yellow-600'} />
                 <div>
-                  <p className="font-bold text-yellow-200 text-sm md:text-base">Pending Results</p>
-                  <p className="text-yellow-300 text-xs md:text-sm">You have test results waiting to be uploaded to the server.</p>
+                  <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>Pending Results</p>
+                  <p className={`text-xs md:text-sm ${darkMode ? 'text-yellow-300' : 'text-yellow-600'}`}>You have test results waiting to be uploaded to the server.</p>
                 </div>
               </div>
               <button
                 onClick={handleSyncPending}
                 disabled={!isOnline}
-                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:from-gray-500 disabled:to-gray-600 text-black disabled:text-gray-300 px-3 py-2 rounded-lg font-medium transition-colors text-xs md:text-sm"
+                className={`px-3 py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${
+                  darkMode
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:from-gray-500 disabled:to-gray-600 text-black disabled:text-gray-300'
+                    : 'bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white'
+                }`}
               >
                 {isOnline ? 'Upload Now' : 'No Internet'}
               </button>
@@ -110,56 +128,95 @@ const Dashboard: React.FC = () => {
 
         {/* Hero Section with Satyam Image */}
         <div className="relative overflow-hidden rounded-3xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 gradient-animate"></div>
-          <div className="relative glass-dark rounded-3xl p-6 md:p-8">
+          <div className={`absolute inset-0 ${
+            darkMode 
+              ? 'bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500' 
+              : 'bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600'
+          } gradient-animate`}></div>
+          <div className={`relative rounded-3xl p-6 md:p-8 ${
+            darkMode ? 'glass-dark' : 'bg-white/20 backdrop-blur-lg border border-white/30'
+          }`}>
             <div className="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0">
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start space-x-2 mb-4">
                   {isOnline ? (
                     <>
-                      <Wifi size={16} className="text-green-400" />
-                      <span className="text-green-300 text-xs md:text-sm font-medium">Online</span>
+                      <Wifi size={16} className={darkMode ? 'text-green-400' : 'text-green-200'} />
+                      <span className={`text-xs md:text-sm font-medium ${darkMode ? 'text-green-300' : 'text-green-100'}`}>Online</span>
                     </>
                   ) : (
                     <>
-                      <WifiOff size={16} className="text-red-400" />
-                      <span className="text-red-300 text-xs md:text-sm font-medium">Offline</span>
+                      <WifiOff size={16} className={darkMode ? 'text-red-400' : 'text-red-200'} />
+                      <span className={`text-xs md:text-sm font-medium ${darkMode ? 'text-red-300' : 'text-red-100'}`}>Offline</span>
                     </>
                   )}
                 </div>
-                <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+                <h1 className={`text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 ${
+                  darkMode 
+                    ? 'bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent'
+                    : 'text-white'
+                }`}>
                   Welcome back, Satyam!
                 </h1>
-                <p className="text-blue-100 text-base md:text-xl lg:text-2xl mb-4 md:mb-6">Ready to ace your next test?</p>
+                <p className={`text-base md:text-xl lg:text-2xl mb-4 md:mb-6 ${
+                  darkMode ? 'text-blue-100' : 'text-white/90'
+                }`}>Ready to ace your next test?</p>
                 
                 {/* Quick Stats */}
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 md:gap-6">
-                  <div className="flex items-center space-x-2 bg-white/10 rounded-full px-3 py-2">
-                    <Target size={16} className="text-cyan-400" />
-                    <span className="text-xs md:text-sm font-medium">{totalAttempts} Tests</span>
+                  <div className={`flex items-center space-x-2 rounded-full px-3 py-2 ${
+                    darkMode ? 'bg-white/10' : 'bg-white/20'
+                  }`}>
+                    <Target size={16} className={darkMode ? 'text-cyan-400' : 'text-cyan-200'} />
+                    <span className={`text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>{totalAttempts} Tests</span>
                   </div>
-                  <div className="flex items-center space-x-2 bg-white/10 rounded-full px-3 py-2">
-                    <Star size={16} className="text-yellow-400" />
-                    <span className="text-xs md:text-sm font-medium">{averageScore}% Avg</span>
+                  <div className={`flex items-center space-x-2 rounded-full px-3 py-2 ${
+                    darkMode ? 'bg-white/10' : 'bg-white/20'
+                  }`}>
+                    <Star size={16} className={darkMode ? 'text-yellow-400' : 'text-yellow-200'} />
+                    <span className={`text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>{averageScore}% Avg</span>
                   </div>
-                  <div className="flex items-center space-x-2 bg-white/10 rounded-full px-3 py-2">
-                    <Zap size={16} className="text-purple-400" />
-                    <span className="text-xs md:text-sm font-medium">Level {Math.floor(totalAttempts / 5) + 1}</span>
+                  <div className={`flex items-center space-x-2 rounded-full px-3 py-2 ${
+                    darkMode ? 'bg-white/10' : 'bg-white/20'
+                  }`}>
+                    <Zap size={16} className={darkMode ? 'text-purple-400' : 'text-purple-200'} />
+                    <span className={`text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>Level {Math.floor(totalAttempts / 5) + 1}</span>
                   </div>
                 </div>
               </div>
               
               {/* Satyam Image */}
               <div className="relative">
-                <div className="w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full overflow-hidden border-4 border-white/20 float-animation pulse-glow">
+                <div className={`w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full overflow-hidden border-4 float-animation pulse-glow ${
+                  darkMode ? 'border-white/20' : 'border-white/30'
+                }`}>
                   <img 
-                    src="/5aca0d6c-7f62-420d-9299-e85108fa6c39.png" 
+                    src="/5aca0d6c-7f62-420d-9299-e85108fa6c39 copy.png" 
                     alt="Satyam" 
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                <div className={`absolute -top-2 -right-2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${
+                  darkMode 
+                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
+                    : 'bg-gradient-to-r from-yellow-300 to-orange-400'
+                }`}>
                   <GraduationCap size={16} className="text-white" />
+                </div>
+                {/* Additional sparkles */}
+                <div className={`absolute -top-4 -left-4 w-6 h-6 rounded-full flex items-center justify-center ${
+                  darkMode 
+                    ? 'bg-gradient-to-r from-pink-400 to-purple-500' 
+                    : 'bg-gradient-to-r from-pink-300 to-purple-400'
+                }`}>
+                  <Star size={12} className="text-white" />
+                </div>
+                <div className={`absolute -bottom-4 -right-4 w-6 h-6 rounded-full flex items-center justify-center ${
+                  darkMode 
+                    ? 'bg-gradient-to-r from-cyan-400 to-blue-500' 
+                    : 'bg-gradient-to-r from-cyan-300 to-blue-400'
+                }`}>
+                  <Zap size={12} className="text-white" />
                 </div>
               </div>
             </div>
@@ -168,26 +225,34 @@ const Dashboard: React.FC = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="glass-dark rounded-2xl p-4 md:p-6 border border-white/10">
+          <div className={`rounded-2xl p-4 md:p-6 border ${
+            darkMode 
+              ? 'glass-dark border-white/10' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
             <div className="flex items-center space-x-3 md:space-x-4">
               <div className="p-2 md:p-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
                 <BookOpen size={20} className="text-white" />
               </div>
               <div>
-                <p className="text-white/80 text-xs md:text-sm font-medium">Total Tests</p>
-                <p className="text-xl md:text-3xl font-bold text-white">{totalAttempts}</p>
+                <p className={`text-xs md:text-sm font-medium ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Total Tests</p>
+                <p className={`text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalAttempts}</p>
               </div>
             </div>
           </div>
 
-          <div className="glass-dark rounded-2xl p-4 md:p-6 border border-white/10">
+          <div className={`rounded-2xl p-4 md:p-6 border ${
+            darkMode 
+              ? 'glass-dark border-white/10' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
             <div className="flex items-center space-x-3 md:space-x-4">
               <div className="p-2 md:p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
                 <TrendingUp size={20} className="text-white" />
               </div>
               <div>
-                <p className="text-white/80 text-xs md:text-sm font-medium">Avg Score</p>
-                <p className="text-xl md:text-3xl font-bold text-white">{averageScore}%</p>
+                <p className={`text-xs md:text-sm font-medium ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Avg Score</p>
+                <p className={`text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{averageScore}%</p>
               </div>
             </div>
           </div>
@@ -195,11 +260,15 @@ const Dashboard: React.FC = () => {
 
         {/* Quick Actions */}
         <div className="space-y-4">
-          <h2 className="text-lg md:text-xl font-bold text-white">Quick Actions</h2>
+          <h2 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Quick Actions</h2>
           
           <button
             onClick={handleStartTest}
-            className="w-full glass-dark rounded-2xl p-4 md:p-6 border border-white/10 hover:border-white/20 transition-all duration-300 group"
+            className={`w-full rounded-2xl p-4 md:p-6 border transition-all duration-300 group ${
+              darkMode 
+                ? 'glass-dark border-white/10 hover:border-white/20' 
+                : 'bg-white/80 backdrop-blur-lg border-white/20 hover:border-white/30 shadow-lg hover:shadow-xl'
+            }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3 md:space-x-4">
@@ -207,22 +276,26 @@ const Dashboard: React.FC = () => {
                   <Play size={20} className="text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-white text-sm md:text-lg">Take New Test</p>
-                  <p className="text-white/80 text-xs md:text-sm">
+                  <p className={`font-bold text-sm md:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Take New Test</p>
+                  <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                     {isOnline ? 'Start practicing now' : 'Internet required to start'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                {!isOnline && <AlertCircle size={16} className="text-red-400" />}
-                <div className="text-white text-lg md:text-2xl group-hover:translate-x-2 transition-transform">→</div>
+                {!isOnline && <AlertCircle size={16} className={darkMode ? 'text-red-400' : 'text-red-500'} />}
+                <div className={`text-lg md:text-2xl group-hover:translate-x-2 transition-transform ${darkMode ? 'text-white' : 'text-gray-900'}`}>→</div>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/history')}
-            className="w-full glass-dark rounded-2xl p-4 md:p-6 border border-white/10 hover:border-white/20 transition-all duration-300 group"
+            className={`w-full rounded-2xl p-4 md:p-6 border transition-all duration-300 group ${
+              darkMode 
+                ? 'glass-dark border-white/10 hover:border-white/20' 
+                : 'bg-white/80 backdrop-blur-lg border-white/20 hover:border-white/30 shadow-lg hover:shadow-xl'
+            }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3 md:space-x-4">
@@ -230,11 +303,11 @@ const Dashboard: React.FC = () => {
                   <Award size={20} className="text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-white text-sm md:text-lg">View Progress</p>
-                  <p className="text-white/80 text-xs md:text-sm">Check your performance</p>
+                  <p className={`font-bold text-sm md:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>View Progress</p>
+                  <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Check your performance</p>
                 </div>
               </div>
-              <div className="text-white text-lg md:text-2xl group-hover:translate-x-2 transition-transform">→</div>
+              <div className={`text-lg md:text-2xl group-hover:translate-x-2 transition-transform ${darkMode ? 'text-white' : 'text-gray-900'}`}>→</div>
             </div>
           </button>
         </div>
@@ -242,22 +315,29 @@ const Dashboard: React.FC = () => {
         {/* Recent Attempts */}
         {recentAttempts.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg md:text-xl font-bold text-white">Recent Attempts</h2>
+            <h2 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Attempts</h2>
             <div className="space-y-3">
               {recentAttempts.map((attempt) => (
-                <div key={attempt.id} className="glass-dark rounded-2xl p-4 border border-white/10">
+                <div key={attempt.id} className={`rounded-2xl p-4 border ${
+                  darkMode 
+                    ? 'glass-dark border-white/10' 
+                    : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+                }`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-bold text-white text-sm md:text-base">{attempt.testName}</p>
-                      <p className="text-white/80 text-xs md:text-sm">
+                      <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>{attempt.testName}</p>
+                      <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                         {new Date(attempt.date).toLocaleDateString()}
+                        <span className="ml-2">
+                          {new Date(attempt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg md:text-xl font-bold text-cyan-400">
+                      <p className={`text-lg md:text-xl font-bold ${darkMode ? 'text-cyan-400' : 'text-blue-600'}`}>
                         {attempt.percentage}%
                       </p>
-                      <p className="text-white/80 text-xs md:text-sm">
+                      <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                         {attempt.score}/{attempt.totalMarks}
                       </p>
                     </div>
@@ -270,8 +350,16 @@ const Dashboard: React.FC = () => {
 
         {/* Fun Section */}
         <div className="relative overflow-hidden rounded-2xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 gradient-animate"></div>
-          <div className="relative glass-dark rounded-2xl p-4 md:p-6 border border-white/10">
+          <div className={`absolute inset-0 gradient-animate ${
+            darkMode 
+              ? 'bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500' 
+              : 'bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400'
+          }`}></div>
+          <div className={`relative rounded-2xl p-4 md:p-6 border ${
+            darkMode 
+              ? 'glass-dark border-white/10' 
+              : 'bg-white/20 backdrop-blur-lg border-white/30'
+          }`}>
             <div className="flex items-center space-x-3 mb-4">
               <Smile size={20} className="text-white" />
               <h3 className="font-bold text-white text-sm md:text-lg">Joke of the Day</h3>

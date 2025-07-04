@@ -39,6 +39,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasPendingAttempts, setHasPendingAttempts] = useState(false);
+  const [attemptSaved, setAttemptSaved] = useState(false);
 
   // Check for pending attempts
   useEffect(() => {
@@ -133,6 +134,12 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addTestAttempt = async (attempt: TestAttempt) => {
     if (user) {
       try {
+        // Prevent duplicate submissions
+        if (attemptSaved) {
+          console.log('Attempt already saved, skipping duplicate submission');
+          return;
+        }
+        
         // Try to save online first
         if (networkService.isOnline()) {
           const savedAttempt = await attemptService.saveAttempt({
@@ -162,6 +169,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
 
             setTestAttempts(prev => [formattedAttempt, ...prev]);
+            setAttemptSaved(true);
             showSuccess('Test results saved successfully!');
           }
         } else {
@@ -203,6 +211,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearUserAnswers = () => {
     setUserAnswers([]);
+    setAttemptSaved(false);
   };
 
   return (
