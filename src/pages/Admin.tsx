@@ -690,41 +690,6 @@ export default function Admin() {
           </div>
         </div>
       </div>
-      
-      {/* Anime-style decorative elements scattered around */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Top corners */}
-        <div className="absolute top-20 left-4 text-red-400 opacity-50">
-          <div className="text-2xl">🛡️</div>
-        </div>
-        <div className="absolute top-32 right-8 text-purple-400 opacity-60">
-          <div className="text-xl">⚙️</div>
-        </div>
-        
-        {/* Side elements */}
-        <div className="absolute top-1/3 left-2 text-green-400 opacity-40 animate-pulse">
-          <div className="text-lg">🔧</div>
-        </div>
-        <div className="absolute top-1/2 right-4 text-yellow-400 opacity-50">
-          <div className="text-xl">📊</div>
-        </div>
-        
-        {/* Bottom corners */}
-        <div className="absolute bottom-32 left-6 text-cyan-400 opacity-60">
-          <div className="text-2xl">💾</div>
-        </div>
-        <div className="absolute bottom-28 right-10 text-pink-400 opacity-50">
-          <div className="text-xl">🔐</div>
-        </div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-2/3 left-8 text-orange-400 opacity-40 animate-pulse">
-          <div className="text-lg">📈</div>
-        </div>
-        <div className="absolute bottom-1/3 right-12 text-indigo-400 opacity-40">
-          <div className="text-lg">⚡</div>
-        </div>
-      </div>
     </div>
   );
 }

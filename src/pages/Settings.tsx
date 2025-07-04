@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun, User, Shield, LogOut } from 'lucide-react';
+import { Moon, Sun, User, Shield, LogOut, Star, Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuiz } from '../contexts/QuizContext';
@@ -154,16 +154,16 @@ const Settings: React.FC = () => {
                     </div>
                     {/* Decorative elements around the image */}
                     <div className="absolute -top-6 -left-6 text-pink-400">
-                      <Shield size={24} />
+                      <Sparkles size={24} />
                     </div>
                     <div className="absolute -bottom-6 -right-6 text-cyan-400">
                       <Star size={20} />
                     </div>
                     <div className="absolute -top-8 right-2 text-yellow-400">
-                      <Sparkles size={18} />
+                      <Star size={18} />
                     </div>
                     <div className="absolute -bottom-2 -left-8 text-purple-400">
-                      <User size={16} />
+                      <Sparkles size={16} />
                     </div>
                   </div>
                   
@@ -270,41 +270,6 @@ const Settings: React.FC = () => {
             </p>
             <p className={`text-xs md:text-sm ${darkMode ? 'text-white/60' : 'text-gray-500'}`}>Version 1.0.0</p>
           </div>
-        </div>
-      </div>
-      
-      {/* Anime-style decorative elements scattered around */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Top corners */}
-        <div className="absolute top-20 left-4 text-purple-400 opacity-50">
-          <div className="text-2xl">⚙️</div>
-        </div>
-        <div className="absolute top-32 right-8 text-blue-400 opacity-60">
-          <div className="text-xl">🎨</div>
-        </div>
-        
-        {/* Side elements */}
-        <div className="absolute top-1/3 left-2 text-green-400 opacity-40 animate-pulse">
-          <div className="text-lg">🔧</div>
-        </div>
-        <div className="absolute top-1/2 right-4 text-yellow-400 opacity-50">
-          <div className="text-xl">💡</div>
-        </div>
-        
-        {/* Bottom corners */}
-        <div className="absolute bottom-32 left-6 text-cyan-400 opacity-60">
-          <div className="text-2xl">🌙</div>
-        </div>
-        <div className="absolute bottom-28 right-10 text-pink-400 opacity-50">
-          <div className="text-xl">☀️</div>
-        </div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-2/3 left-8 text-orange-400 opacity-40 animate-pulse">
-          <div className="text-lg">🎯</div>
-        </div>
-        <div className="absolute bottom-1/3 right-12 text-indigo-400 opacity-40">
-          <div className="text-lg">✨</div>
         </div>
       </div>
     </div>
