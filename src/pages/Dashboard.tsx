@@ -78,7 +78,6 @@ const Dashboard: React.FC = () => {
         ? 'bg-black text-white' 
         : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-900'
     }`}>
-    }`}>
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Connection Status Banner */}
         {!isOnline && (
