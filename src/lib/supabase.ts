@@ -253,14 +253,12 @@ export const testService = {
     } catch (error: any) {
       console.error('Error fetching test by ID:', error);
       
-      // If offline, try cached data
-      if (!networkService.isOnline()) {
-        const cachedTests = cacheService.getCachedTests();
-        const test = cachedTests.find(t => t.id === id);
-        if (test) {
-          console.warn('Using cached test data - offline mode');
-          return test;
-        }
+      // Always try cached data as fallback when Supabase fails
+      const cachedTests = cacheService.getCachedTests();
+      const test = cachedTests.find(t => t.id === id);
+      if (test) {
+        console.warn('Using cached test data - Supabase connection failed, falling back to cache');
+        return test;
       }
       
       throw error;
