@@ -123,7 +123,10 @@ const networkService = {
       });
 
       // Simple query to test connection
-      const connectionPromise = supabase.from('tests').select('count', { count: 'exact', head: true });
+      const connectionPromise = supabase
+        .from('tests')
+        .select('id', { head: true, count: 'exact' })
+        .limit(1);
       
       await Promise.race([connectionPromise, timeoutPromise]);
       

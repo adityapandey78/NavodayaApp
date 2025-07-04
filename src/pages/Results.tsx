@@ -99,7 +99,13 @@ const Results: React.FC = () => {
             percentage,
             date: new Date().toISOString(),
             duration: foundTest.durationInMinutes,
-            sectionWiseScore
+            sectionWiseScore,
+            userAnswers: userAnswers.map(answer => ({
+              questionId: answer.questionId,
+              selectedAnswer: answer.selectedAnswer,
+              isCorrect: answer.isCorrect,
+              marks: answer.marks
+            }))
           };
 
           await addTestAttempt(attempt);

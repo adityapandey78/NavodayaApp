@@ -7,7 +7,11 @@ interface TimerProps {
 }
 
 const Timer: React.FC<TimerProps> = ({ duration, onTimeUp }) => {
-  const [timeLeft, setTimeLeft] = useState(duration * 60); // convert to seconds
+  const [timeLeft, setTimeLeft] = useState(() => {
+    // Ensure duration is a valid number
+    const validDuration = typeof duration === 'number' && !isNaN(duration) ? duration : 60;
+    return validDuration * 60;
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
 
@@ -17,10 +21,19 @@ const Timer: React.FC<TimerProps> = ({ duration, onTimeUp }) => {
   }, [onTimeUp]);
 
   useEffect(() => {
+    // Validate duration
+    if (typeof duration !== 'number' || isNaN(duration) || duration <= 0) {
+      console.error('Invalid timer duration:', duration);
+      return;
+    }
+
     // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
+
+    // Reset time left when duration changes
+    setTimeLeft(duration * 60);
 
     // Start the timer
     intervalRef.current = setInterval(() => {
@@ -46,6 +59,11 @@ const Timer: React.FC<TimerProps> = ({ duration, onTimeUp }) => {
   }, [duration]); // Only depend on duration
 
   const formatTime = (seconds: number) => {
+    // Handle invalid numbers
+    if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) {
+      return '0:00';
+    }
+    
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;

@@ -158,7 +158,12 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
             percentage: attempt.percentage,
             duration: attempt.duration,
             sectionWiseScore: attempt.sectionWiseScore,
-            userAnswers: userAnswers
+            userAnswers: userAnswers.map(answer => ({
+              questionId: answer.questionId,
+              selectedAnswer: answer.selectedAnswer,
+              isCorrect: answer.isCorrect,
+              marks: answer.marks
+            }))
           }, user.id);
 
           if (savedAttempt) {
@@ -196,7 +201,12 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           percentage: attempt.percentage,
           duration: attempt.duration,
           sectionWiseScore: attempt.sectionWiseScore,
-          userAnswers: userAnswers
+          userAnswers: userAnswers.map(answer => ({
+            questionId: answer.questionId,
+            selectedAnswer: answer.selectedAnswer,
+            isCorrect: answer.isCorrect,
+            marks: answer.marks
+          }))
         }, user.id);
         
         setHasPendingAttempts(true);

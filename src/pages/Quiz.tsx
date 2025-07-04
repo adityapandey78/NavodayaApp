@@ -222,9 +222,9 @@ const Quiz: React.FC = () => {
   const hasHindiContent = currentQuestion.questionHi && currentQuestion.questionHi !== currentQuestion.question;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="glass-dark border-b border-white/10 p-4">
+      <div className="glass-dark border-b border-white/10 p-4 flex-shrink-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between max-w-7xl mx-auto space-y-4 md:space-y-0">
           <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
             <h1 className="text-base md:text-xl font-bold text-white">
@@ -257,9 +257,9 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Question */}
-      <div className="p-4 max-w-7xl mx-auto">
-        <div className="glass-dark rounded-2xl p-4 md:p-8 border border-white/10 mb-6">
-          <div className="mb-6">
+      <div className="flex-1 p-4 max-w-7xl mx-auto flex flex-col overflow-hidden">
+        <div className="glass-dark rounded-2xl p-4 md:p-8 border border-white/10 mb-6 flex-1 flex flex-col overflow-hidden">
+          <div className="mb-6 flex-shrink-0">
             <span className="inline-block px-3 py-1 md:px-4 md:py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 text-xs md:text-sm rounded-full mb-4 font-medium border border-purple-500/30">
               {currentQuestion.sectionName}
             </span>
@@ -270,7 +270,7 @@ const Quiz: React.FC = () => {
             </p>
           </div>
 
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-3 md:space-y-4 flex-1 overflow-y-auto">
             {currentQuestion.options.map((option: string, index: number) => {
               const optionText = showHindi && currentQuestion.optionsHi 
                 ? currentQuestion.optionsHi[index] 
@@ -310,7 +310,7 @@ const Quiz: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-shrink-0 mt-4">
           <button
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0}
