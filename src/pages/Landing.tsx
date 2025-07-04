@@ -81,7 +81,7 @@ const Landing: React.FC = () => {
             </div>
           </div>
 
-          {/* CTA Buttons */}
+              className={`w-full text-white font-medium py-3 md:py-4 px-4 md:px-6 rounded-xl border transition-all duration-300 flex items-center justify-center space-x-2 text-sm md:text-base ${
           <div className="space-y-3 md:space-y-4">
             <button
               onClick={() => navigate('/dashboard')}
@@ -153,6 +153,22 @@ const Landing: React.FC = () => {
         {/* Footer */}
         <p className="text-white/60 text-xs md:text-sm">
           Made with ❤️ by Bhaiya for your success
+
+          {/* Sign In for logged in users */}
+          {user && (
+            <div className={`w-full text-center py-3 md:py-4 px-4 md:px-6 rounded-xl border ${
+              darkMode 
+                ? 'glass-dark border-white/20' 
+                : 'bg-white/10 border-white/30'
+            }`}>
+              <div className="flex items-center justify-center space-x-2 text-white">
+                <User size={16} />
+                <span className="text-sm md:text-base font-medium">
+                  Welcome back, {user.email.split('@')[0]}!
+                </span>
+              </div>
+            </div>
+          )}
         </p>
       </div>
     </div>

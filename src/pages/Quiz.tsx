@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Flag, Globe } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { testService } from '../lib/supabase';
 import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
@@ -11,6 +12,7 @@ const Quiz: React.FC = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showError } = useToast();
   const { 
     setCurrentTest, 
     userAnswers, 
