@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
                   darkMode ? 'border-white/20' : 'border-white/30'
                 }`}>
                   <img 
-                    src="/5aca0d6c-7f62-420d-9299-e85108fa6c39 copy.png" 
+                    src="https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400" 
                     alt="Satyam" 
                     className="w-full h-full object-cover"
                   />
@@ -328,7 +328,7 @@ const Dashboard: React.FC = () => {
                       <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>{attempt.testName}</p>
                       <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                         {new Date(attempt.date).toLocaleDateString()}
-                        <span className="ml-2">
+                        <span className="ml-2 text-xs">
                           {new Date(attempt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </p>
@@ -337,7 +337,11 @@ const Dashboard: React.FC = () => {
                       <p className={`text-lg md:text-xl font-bold ${darkMode ? 'text-cyan-400' : 'text-blue-600'}`}>
                         {attempt.percentage}%
                       </p>
-                      <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                      <p className={`text-xs font-medium ${
+                        darkMode 
+                          ? 'text-purple-400' 
+                          : 'text-purple-600'
+                      }`}>
                         {attempt.score}/{attempt.totalMarks}
                       </p>
                     </div>
