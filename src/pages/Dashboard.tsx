@@ -215,6 +215,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="absolute -bottom-2 -left-2 w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
                   <Star size={10} className="text-white" />
+                </div>
               </div>
             </div>
           </div>
