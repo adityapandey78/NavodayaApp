@@ -190,7 +190,6 @@ const Dashboard: React.FC = () => {
                     </>
                   )}
                 </div>
-                <h1 className={`text-lg sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-2 md:mb-4 leading-tight ${
                 <h1 className={`dashboard-title text-lg sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-2 md:mb-4 leading-tight ${
                   darkMode 
                     ? 'bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent'
@@ -198,7 +197,6 @@ const Dashboard: React.FC = () => {
                 }`}>
                   Welcome back,<br className="sm:hidden" /> Satyam!
                 </h1>
-                <p className={`text-sm sm:text-base md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-6 leading-relaxed ${
                 <p className={`dashboard-subtitle text-sm sm:text-base md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-6 leading-relaxed ${
                   darkMode ? 'text-blue-100' : 'text-white/90'
                 }`}>Ready to ace your next test?</p>
