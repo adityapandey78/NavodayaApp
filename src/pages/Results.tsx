@@ -308,7 +308,6 @@ const Results: React.FC = () => {
           </button>
         </div>
       </div>
-    </div>
   );
 };
 
