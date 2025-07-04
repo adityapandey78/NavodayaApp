@@ -369,7 +369,7 @@ export default function Admin() {
                 type="text"
                 value={credentials.username}
                 onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60 text-base"
                 required
                 disabled={connectionStatus !== 'connected'}
               />
@@ -383,7 +383,7 @@ export default function Admin() {
                 type="password"
                 value={credentials.password}
                 onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60"
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/60 text-base"
                 required
                 disabled={connectionStatus !== 'connected'}
               />
@@ -408,7 +408,7 @@ export default function Admin() {
                 type="button"
                 onClick={checkConnectionStatus}
                 disabled={loginAttempting}
-                className="bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white p-2 rounded-lg transition-colors"
+                className="bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white p-2 rounded-lg transition-colors min-h-[44px]"
                 title="Refresh Connection"
               >
                 <RefreshCw size={20} className={connectionStatus === 'checking' ? 'animate-spin' : ''} />
@@ -520,7 +520,7 @@ export default function Admin() {
                       }`}></span>
                       <div>
                         <h3 className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>{test.testName}</h3>
-                        <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                        <p className={`card-description text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                           {test.testType.charAt(0).toUpperCase() + test.testType.slice(1)} • {test.totalMarks} marks • {test.durationInMinutes} min • {test.sections.length} sections
                         </p>
                       </div>
@@ -531,7 +531,7 @@ export default function Admin() {
                     <button
                       onClick={() => toggleTestStatus(test.id)}
                       disabled={!navigator.onLine}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg transition-colors min-h-[44px] ${
                         test.isLive 
                           ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30' 
                           : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
@@ -544,7 +544,7 @@ export default function Admin() {
                     <button
                       onClick={() => deleteTest(test.id)}
                       disabled={!navigator.onLine}
-                      className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                      className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 min-h-[44px]"
                       title="Delete Test"
                     >
                       <Trash2 size={16} />
@@ -586,7 +586,7 @@ export default function Admin() {
                     setShowTsUpload(false);
                     setTsCode('');
                   }}
-                  className="p-2 hover:bg-white/10 rounded-lg"
+                  className="p-2 hover:bg-white/10 rounded-lg min-h-[44px]"
                 >
                   <X size={20} className={darkMode ? 'text-white' : 'text-gray-600'} />
                 </button>
@@ -601,7 +601,7 @@ export default function Admin() {
                     value={tsCode}
                     onChange={(e) => setTsCode(e.target.value)}
                     placeholder={sampleTestData}
-                    className={`w-full h-64 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 font-mono text-sm ${
+                    className={`w-full h-64 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 font-mono modal-text ${
                       darkMode 
                         ? 'bg-white/10 border-white/20 text-white placeholder-white/40' 
                         : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
@@ -622,7 +622,7 @@ export default function Admin() {
                       setShowTsUpload(false);
                       setTsCode('');
                     }}
-                    className={`px-4 py-2 md:px-6 md:py-2 rounded-lg transition-colors ${
+                    className={`px-4 py-2 md:px-6 md:py-2 rounded-lg transition-colors btn-text ${
                       darkMode 
                         ? 'bg-white/20 hover:bg-white/30 text-white' 
                         : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
@@ -633,7 +633,7 @@ export default function Admin() {
                   <button
                     onClick={handleTsUpload}
                     disabled={!tsCode.trim() || !navigator.onLine}
-                    className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium transition-all duration-300 text-sm md:text-base"
+                    className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium transition-all duration-300 btn-text"
                   >
                     <Upload size={20} />
                     <span>{navigator.onLine ? 'Save to Database' : 'Internet Required'}</span>
