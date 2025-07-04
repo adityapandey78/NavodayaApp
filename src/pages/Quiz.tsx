@@ -222,9 +222,9 @@ const Quiz: React.FC = () => {
   const hasHindiContent = currentQuestion.questionHi && currentQuestion.questionHi !== currentQuestion.question;
 
   return (
-    <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="glass-dark border-b border-white/10 p-4 flex-shrink-0">
+      <div className="glass-dark border-b border-white/10 p-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between max-w-7xl mx-auto space-y-4 md:space-y-0">
           <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
             <h1 className="text-base md:text-xl font-bold text-white">
@@ -257,20 +257,20 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Question */}
-      <div className="flex-1 p-4 max-w-7xl mx-auto flex flex-col overflow-hidden">
-        <div className="glass-dark rounded-2xl p-4 md:p-8 border border-white/10 mb-6 flex-1 flex flex-col overflow-hidden">
-          <div className="mb-6 flex-shrink-0">
+      <div className="p-4 max-w-4xl mx-auto">
+        <div className="glass-dark rounded-2xl p-4 md:p-6 border border-white/10 mb-6">
+          <div className="mb-4">
             <span className="inline-block px-3 py-1 md:px-4 md:py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 text-xs md:text-sm rounded-full mb-4 font-medium border border-purple-500/30">
               {currentQuestion.sectionName}
             </span>
-            <p className="text-sm md:text-xl font-medium text-white leading-relaxed">
+            <div className="text-sm md:text-lg font-medium text-white leading-relaxed">
               {showHindi && currentQuestion.questionHi 
                 ? currentQuestion.questionHi 
                 : currentQuestion.question}
-            </p>
+            </div>
           </div>
 
-          <div className="space-y-3 md:space-y-4 flex-1 overflow-y-auto">
+          <div className="space-y-2 md:space-y-3">
             {currentQuestion.options.map((option: string, index: number) => {
               const optionText = showHindi && currentQuestion.optionsHi 
                 ? currentQuestion.optionsHi[index] 
@@ -282,13 +282,13 @@ const Quiz: React.FC = () => {
                 <button
                   key={`${currentQuestion.id}-${index}`}
                   onClick={() => handleAnswerSelect(option)}
-                  className={`w-full p-4 md:p-6 rounded-xl border-2 text-left transition-all duration-300 ${
+                  className={`w-full p-3 md:p-4 rounded-xl border-2 text-left transition-all duration-300 ${
                     isSelected
                       ? 'border-cyan-400 bg-gradient-to-r from-cyan-400/20 to-blue-500/20 text-white shadow-lg transform scale-[1.02]'
                       : 'border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/10 text-white hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center space-x-3 md:space-x-4">
+                  <div className="flex items-start space-x-3">
                     <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                       isSelected
                         ? 'border-cyan-400 bg-cyan-400'
@@ -298,10 +298,10 @@ const Quiz: React.FC = () => {
                         <div className="w-2 h-2 md:w-3 md:h-3 bg-white rounded-full"></div>
                       )}
                     </div>
-                    <span className="font-bold text-cyan-300 text-sm md:text-lg">
+                    <span className="font-bold text-cyan-300 text-sm md:text-base mt-0.5">
                       {String.fromCharCode(65 + index)}.
                     </span>
-                    <span className="flex-1 text-sm md:text-lg">{optionText}</span>
+                    <span className="flex-1 text-sm md:text-base leading-relaxed">{optionText}</span>
                   </div>
                 </button>
               );
@@ -310,7 +310,7 @@ const Quiz: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between flex-shrink-0 mt-4">
+        <div className="flex items-center justify-between">
           <button
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0}

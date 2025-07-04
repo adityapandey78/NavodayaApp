@@ -191,9 +191,9 @@ const Dashboard: React.FC = () => {
                   darkMode ? 'border-white/20' : 'border-white/30'
                 }`}>
                   <img 
-                    src="/5aca0d6c-7f62-420d-9299-e85108fa6c39.png" 
+                    src="/5aca0d6c-7f62-420d-9299-e85108fa6c39 copy copy.png" 
                     alt="Satyam" 
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <div className={`absolute -top-2 -right-2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${

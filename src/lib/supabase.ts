@@ -110,7 +110,7 @@ const networkService = {
   isOnline: () => navigator.onLine,
   
   // Check if we can reach Supabase with timeout
-  checkSupabaseConnection: async (timeoutMs: number = 5000): Promise<boolean> => {
+  checkSupabaseConnection: async (timeoutMs: number = 2000): Promise<boolean> => {
     if (!isSupabaseAvailable || !supabase) {
       console.warn('Supabase not available for connection check');
       return false;
@@ -125,8 +125,9 @@ const networkService = {
       // Simple query to test connection
       const connectionPromise = supabase
         .from('tests')
-        .select('id', { head: true, count: 'exact' })
-        .limit(1);
+        .select('id')
+        .limit(1)
+        .single();
       
       await Promise.race([connectionPromise, timeoutPromise]);
       

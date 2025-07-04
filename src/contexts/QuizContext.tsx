@@ -140,6 +140,9 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
+      // Mark as submitted immediately to prevent duplicates
+      setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
+      
       try {
         // Prevent duplicate submissions
         if (attemptSaved) {
@@ -181,7 +184,6 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
 
             setTestAttempts(prev => [formattedAttempt, ...prev]);
-            setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
             setAttemptSaved(true);
             showSuccess('Test results saved successfully!');
           }
@@ -219,7 +221,6 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Add to local state for immediate display
         setTestAttempts(prev => [attempt, ...prev]);
-        setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
       }
     } else {
       // Guest user - save locally only
@@ -230,7 +231,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearUserAnswers = () => {
     setUserAnswers([]);
-    setSubmittedAttempts(new Set()); // Clear submitted attempts when starting new test
+    setSubmittedAttempts(new Set());
     setAttemptSaved(false);
   };
 

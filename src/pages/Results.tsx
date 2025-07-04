@@ -88,7 +88,7 @@ const Results: React.FC = () => {
         setResults(resultData);
 
         // Save to history only once
-        if (!attemptSaved && currentAttemptId) {
+        if (!attemptSaved && currentAttemptId && userAnswers.length > 0) {
           const attempt = {
             id: currentAttemptId,
             testId: testId!,
@@ -100,12 +100,7 @@ const Results: React.FC = () => {
             date: new Date().toISOString(),
             duration: foundTest.durationInMinutes,
             sectionWiseScore,
-            userAnswers: userAnswers.map(answer => ({
-              questionId: answer.questionId,
-              selectedAnswer: answer.selectedAnswer,
-              isCorrect: answer.isCorrect,
-              marks: answer.marks
-            }))
+            userAnswers: userAnswers
           };
 
           await addTestAttempt(attempt);

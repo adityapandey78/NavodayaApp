@@ -32,7 +32,7 @@ export default function Admin() {
       }
 
       // Test Supabase connection
-      const canConnect = await networkService.checkSupabaseConnection(3000);
+      const canConnect = await networkService.checkSupabaseConnection(2000);
       setConnectionStatus(canConnect ? 'connected' : 'disconnected');
       
       if (canConnect) {
