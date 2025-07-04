@@ -152,7 +152,7 @@ const Landing: React.FC = () => {
 
         {/* Footer */}
         <p className="text-white/60 text-xs md:text-sm">
-          Made with ❤️ for your success
+          Made with ❤️ by Bhaiya for your success
         </p>
       </div>
     </div>
