@@ -290,6 +290,106 @@ const Results: React.FC = () => {
           </div>
         </div>
 
+        {/* Detailed Analysis Button */}
+        <div className="glass-dark rounded-2xl p-4 md:p-6 border border-white/10">
+          <button
+            onClick={() => setShowDetailedAnalysis(!showDetailedAnalysis)}
+            className="w-full flex items-center justify-center space-x-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white py-3 md:py-4 px-4 md:px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-lg"
+          >
+            <Eye size={20} />
+            <span>{showDetailedAnalysis ? 'Hide' : 'Show'} Detailed Analysis</span>
+          </button>
+        </div>
+
+        {/* Detailed Analysis */}
+        {showDetailedAnalysis && (
+          <div className="glass-dark rounded-2xl p-4 md:p-6 border border-white/10">
+            <h2 className="text-base md:text-xl font-bold text-white mb-4 md:mb-6">Question-wise Analysis</h2>
+            <div className="space-y-4">
+              {getQuestionAnalysis().map((question, index) => (
+                <div key={question.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className="flex items-start space-x-3 mb-4">
+                    <span className="text-purple-400 font-bold text-sm">Q{index + 1}.</span>
+                    <div className="flex-1">
+                      <p className="text-white text-sm md:text-base mb-3">{question.question}</p>
+                      
+                      <div className="space-y-2">
+                        {question.options.map((option: string, optionIndex: number) => {
+                          const isUserAnswer = option === question.userAnswer;
+                          const isCorrectAnswer = option === question.correctAnswer;
+                          
+                          let bgClass = 'bg-white/5';
+                          let textClass = 'text-gray-300';
+                          let borderClass = 'border-white/10';
+                          
+                          if (isCorrectAnswer) {
+                            bgClass = 'bg-green-500/20';
+                            textClass = 'text-green-300';
+                            borderClass = 'border-green-500/30';
+                          } else if (isUserAnswer && !isCorrectAnswer) {
+                            bgClass = 'bg-red-500/20';
+                            textClass = 'text-red-300';
+                            borderClass = 'border-red-500/30';
+                          }
+
+                          return (
+                            <div
+                              key={optionIndex}
+                              className={`p-3 rounded-lg border ${bgClass} ${borderClass} flex items-center justify-between`}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <span className="text-purple-400 font-bold text-sm">
+                                  {String.fromCharCode(65 + optionIndex)}.
+                                </span>
+                                <span className={`text-sm ${textClass}`}>
+                                  {option}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {isUserAnswer && (
+                                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-500/20 text-blue-300">
+                                    Your Choice
+                                  </span>
+                                )}
+                                {isCorrectAnswer && (
+                                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-500/20 text-green-300">
+                                    Correct Answer
+                                  </span>
+                                )}
+                                {isCorrectAnswer ? (
+                                  <Check size={16} className="text-green-400" />
+                                ) : isUserAnswer ? (
+                                  <X size={16} className="text-red-400" />
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
+                        <span>
+                          {question.userAnswer === 'Not answered' ? (
+                            <span className="text-yellow-400">Not Answered</span>
+                          ) : (
+                            <span>Your Answer: <strong>{question.userAnswer}</strong></span>
+                          )}
+                        </span>
+                        <span>
+                          {question.isCorrect ? 
+                            `Earned: ${question.marksEarned}` : 
+                            'Earned: 0'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
           <button
