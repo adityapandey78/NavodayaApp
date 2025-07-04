@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Get environment variables with fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://doibiltyhcqvccsnggwl.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvaWJpbHR5aGNxdmNjc25nZ3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1NTYwMzMsImV4cCI6MjA2NzEzMjAzM30.INuR6Q_0AU5B0tjw51s25Jz7jC63GAL5CG0C84sRNDg';
 
 // Initialize Supabase client
 let supabase: any = null;
@@ -164,39 +164,69 @@ export const testService = {
   // Get all live tests with caching
   async getLiveTests(): Promise<any[]> {
     try {
-      // Try to fetch from Supabase first, but don't require connection check
-      if (!isSupabaseAvailable || !supabase) {
-        throw new Error('Database not available');
+      // First try to get cached tests for immediate loading
+      const cachedTests = cacheService.getCachedTests();
+      
+      // If we have cached tests and cache is valid, use them first
+      if (cachedTests.length > 0 && cacheService.isCacheValid()) {
+        console.log(`✅ Using cached tests (${cachedTests.length} tests)`);
+        
+        // Try to refresh in background if online
+        if (isSupabaseAvailable && supabase && networkService.isOnline()) {
+          this.refreshTestsInBackground();
+        }
+        
+        return cachedTests;
       }
       
-      const { data, error } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('is_live', true)
-        .order('created_at', { ascending: false });
+      // Try to fetch from Supabase if no valid cache
+      if (isSupabaseAvailable && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('tests')
+            .select('*')
+            .eq('is_live', true)
+            .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Supabase query error:', error);
-        throw error;
+          if (!error && data) {
+            const formattedTests = data.map((test: DatabaseTest) => ({
+              id: test.id,
+              testType: test.test_type,
+              testName: test.test_name,
+              testNameHi: test.test_name_hi,
+              totalMarks: test.total_marks,
+              testDate: test.test_date,
+              durationInMinutes: test.duration_in_minutes,
+              isLive: test.is_live,
+              sections: test.sections
+            }));
+
+            // Cache the tests
+            cacheService.cacheTests(formattedTests);
+            console.log(`✅ Loaded ${formattedTests.length} tests from database`);
+            
+            return formattedTests;
+          }
+        } catch (supabaseError) {
+          console.warn('Supabase fetch failed:', supabaseError);
+        }
       }
-
-      const formattedTests = (data || []).map((test: DatabaseTest) => ({
-        id: test.id,
-        testType: test.test_type,
-        testName: test.test_name,
-        testNameHi: test.test_name_hi,
-        totalMarks: test.total_marks,
-        testDate: test.test_date,
-        durationInMinutes: test.duration_in_minutes,
-        isLive: test.is_live,
-        sections: test.sections
-      }));
-
-      // Cache the tests for offline quiz-taking
-      cacheService.cacheTests(formattedTests);
-      console.log(`✅ Loaded ${formattedTests.length} tests from database`);
       
-      return formattedTests;
+      // Fallback to cached tests even if expired
+      if (cachedTests.length > 0) {
+        console.warn('Using expired cached tests as fallback');
+        return cachedTests;
+      }
+      
+      // Final fallback to default tests
+      console.warn('Loading default tests as final fallback');
+      const module = await import('../data/testData');
+      const defaultTests = module.availableTests || [];
+      
+      // Cache default tests
+      cacheService.cacheTests(defaultTests);
+      
+      return defaultTests;
     } catch (error: any) {
       console.error('Error fetching tests from Supabase:', error);
       
@@ -208,52 +238,94 @@ export const testService = {
       }
       
       // Only throw error if both live fetch and cached fallback fail
-      throw new Error(`Failed to load tests: ${error.message || 'Database connection failed'}`);
+      console.error('All fallbacks failed, returning empty array');
+      return [];
+    }
+  },
+
+  // Background refresh method
+  async refreshTestsInBackground(): Promise<void> {
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .select('*')
+        .eq('is_live', true)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        const formattedTests = data.map((test: DatabaseTest) => ({
+          id: test.id,
+          testType: test.test_type,
+          testName: test.test_name,
+          testNameHi: test.test_name_hi,
+          totalMarks: test.total_marks,
+          testDate: test.test_date,
+          durationInMinutes: test.duration_in_minutes,
+          isLive: test.is_live,
+          sections: test.sections
+        }));
+
+        cacheService.cacheTests(formattedTests);
+        console.log('✅ Background refresh completed');
+      }
+    } catch (error) {
+      console.warn('Background refresh failed:', error);
     }
   },
 
   // Get test by ID (with cache fallback for quiz-taking)
   async getTestById(id: string): Promise<any | null> {
     try {
-      // Try Supabase first, but don't require connection check
-      if (!isSupabaseAvailable || !supabase) {
-        throw new Error('Database not available');
+      // First check cached tests
+      const cachedTests = cacheService.getCachedTests();
+      const cachedTest = cachedTests.find(t => t.id === id);
+      
+      if (cachedTest) {
+        console.log('✅ Using cached test data');
+        return cachedTest;
       }
       
-      const { data, error } = await supabase
-        .from('tests')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // Try Supabase if not in cache
+      if (isSupabaseAvailable && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('tests')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-      if (error) {
-        console.error('Supabase query error:', error);
-        throw error;
+          if (!error && data) {
+            return {
+              id: data.id,
+              testType: data.test_type,
+              testName: data.test_name,
+              testNameHi: data.test_name_hi,
+              totalMarks: data.total_marks,
+              testDate: data.test_date,
+              durationInMinutes: data.duration_in_minutes,
+              isLive: data.is_live,
+              sections: data.sections
+            };
+          }
+        } catch (supabaseError) {
+          console.warn('Supabase fetch failed for test ID:', supabaseError);
+        }
       }
-
-      return {
-        id: data.id,
-        testType: data.test_type,
-        testName: data.test_name,
-        testNameHi: data.test_name_hi,
-        totalMarks: data.total_marks,
-        testDate: data.test_date,
-        durationInMinutes: data.duration_in_minutes,
-        isLive: data.is_live,
-        sections: data.sections
-      };
+      
+      // Fallback to default tests
+      const module = await import('../data/testData');
+      const defaultTests = module.availableTests || [];
+      const defaultTest = defaultTests.find(t => t.id === id);
+      
+      if (defaultTest) {
+        console.log('✅ Using default test data');
+        return defaultTest;
+      }
+      
+      return null;
     } catch (error: any) {
       console.error('Error fetching test by ID:', error);
-      
-      // Try cached data as fallback when Supabase fails
-      const cachedTests = cacheService.getCachedTests();
-      const test = cachedTests.find(t => t.id === id);
-      if (test) {
-        console.warn('Using cached test data - database connection failed, falling back to cache');
-        return test;
-      }
-      
-      throw error;
+      return null;
     }
   },
 

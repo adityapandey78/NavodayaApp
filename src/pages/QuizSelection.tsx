@@ -22,24 +22,23 @@ const QuizSelection: React.FC = () => {
       const tests = await testService.getLiveTests();
       setAvailableTests(tests);
       
-      if (tests.length > 0) {
-        if (networkService.isOnline()) {
-          showInfo('Tests loaded from database');
-        } else {
-          showWarning('Using cached tests - you are offline');
-        }
-      }
+      console.log(`Loaded ${tests.length} tests successfully`);
       
     } catch (error: any) {
       console.error('Error loading tests:', error);
-      setError(error.message);
-      setAvailableTests([]);
       
-      if (error.message.includes('internet') || error.message.includes('connection')) {
-        showError('No internet connection. Please connect to load tests.');
-      } else {
-        showError('Failed to load tests. Please try again.');
+      // Don't show error for empty results, just log it
+      if (error.message && !error.message.includes('No tests')) {
+        setError(error.message);
+        
+        if (error.message.includes('internet') || error.message.includes('connection')) {
+          showError('No internet connection. Please connect to load tests.');
+        } else {
+          showError('Failed to load tests. Please try again.');
+        }
       }
+      
+      setAvailableTests([]);
     } finally {
       setIsLoading(false);
     }
@@ -51,13 +50,11 @@ const QuizSelection: React.FC = () => {
     // Listen for online/offline events
     const handleOnline = () => {
       setIsOnline(true);
-      showInfo('Back online! Refreshing tests...');
       loadTests();
     };
     
     const handleOffline = () => {
       setIsOnline(false);
-      showWarning('You are now offline. Using cached data if available.');
     };
 
     window.addEventListener('online', handleOnline);
@@ -249,7 +246,7 @@ const QuizSelection: React.FC = () => {
         )}
 
         {/* No Tests Available */}
-        {(navodayaTests.length === 0 && sainikTests.length === 0) && !error && (
+        {(navodayaTests.length === 0 && sainikTests.length === 0) && !isLoading && (
           <div className="text-center py-12 md:py-16">
             <div className="glass-dark rounded-2xl p-8 md:p-12 border border-white/10">
               <div className="w-20 h-20 md:w-24 md:h-24 glass-dark rounded-full flex items-center justify-center mx-auto mb-6">
@@ -257,16 +254,13 @@ const QuizSelection: React.FC = () => {
               </div>
               <h3 className="text-lg md:text-2xl font-bold text-white mb-4">No Tests Available</h3>
               <p className="text-gray-400 text-sm md:text-lg mb-6">
-                {isOnline 
-                  ? 'Please check back later or contact administrator'
-                  : 'No cached tests available. Please connect to internet to load tests.'
-                }
+                Tests are being loaded. Please wait a moment or try refreshing the page.
               </p>
               <button
                 onClick={loadTests}
                 className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-xl font-bold transition-all duration-300 text-sm md:text-base"
               >
-                {isOnline ? 'Retry Loading' : 'Check Connection'}
+                Refresh Tests
               </button>
             </div>
           </div>

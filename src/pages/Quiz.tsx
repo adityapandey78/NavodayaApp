@@ -46,54 +46,21 @@ const Quiz: React.FC = () => {
     try {
       let foundTest = null;
 
-      // Try Supabase first
+      // Try to get test by ID (includes all fallbacks)
       try {
         foundTest = await testService.getTestById(testId);
-        if (foundTest) {
-          foundTest = {
-            id: foundTest.id,
-            testType: foundTest.test_type,
-            testName: foundTest.test_name,
-            testNameHi: foundTest.test_name_hi,
-            totalMarks: foundTest.total_marks,
-            testDate: foundTest.test_date,
-            durationInMinutes: foundTest.duration_in_minutes,
-            isLive: foundTest.is_live,
-            sections: foundTest.sections
-          };
-        }
-      } catch (supabaseError) {
-        console.error('Supabase error:', supabaseError);
-      }
-
-      // Fallback to localStorage
-      if (!foundTest) {
-        try {
-          const savedTests = localStorage.getItem('admin-tests');
-          if (savedTests) {
-            const parsedTests = JSON.parse(savedTests);
-            if (Array.isArray(parsedTests)) {
-              foundTest = parsedTests.find((t: any) => t.id === testId && t.testType === testType);
-            }
-          }
-        } catch (localError) {
-          console.error('localStorage error:', localError);
-        }
-      }
-
-      // Final fallback to default tests
-      if (!foundTest) {
-        try {
-          const module = await import('../data/testData');
-          const defaultTests = module.availableTests || [];
-          foundTest = defaultTests.find((t: any) => t.id === testId && t.testType === testType);
-        } catch (importError) {
-          console.error('Import error:', importError);
-        }
+      } catch (testError) {
+        console.error('Error loading test:', testError);
       }
 
       if (!foundTest) {
-        setError('Test not found');
+        setError('Test not found. Please go back and select a valid test.');
+        return;
+      }
+
+      // Ensure the test has the correct structure
+      if (!foundTest.sections || !Array.isArray(foundTest.sections)) {
+        setError('Invalid test format. Please contact administrator.');
         return;
       }
 
@@ -112,15 +79,21 @@ const Quiz: React.FC = () => {
         section.questions.map((q: any) => ({ 
           ...q, 
           sectionName: section.name,
-          sectionNameHi: section.nameHi 
+          sectionNameHi: section.nameHi || section.name
         }))
       );
+      
+      if (questions.length === 0) {
+        setError('This test has no questions. Please contact administrator.');
+        return;
+      }
+      
       setAllQuestions(questions);
       setIsInitialized(true);
       
     } catch (error) {
       console.error('Error loading test:', error);
-      setError('Failed to load test');
+      setError('Failed to load test. Please try again or go back to test selection.');
     } finally {
       setIsLoading(false);
     }
