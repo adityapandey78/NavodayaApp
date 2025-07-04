@@ -26,7 +26,7 @@ const Landing: React.FC = () => {
         <div className="relative">
           <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden mx-auto mb-6 shadow-2xl float-animation pulse-glow border-4 border-white/20">
             <img 
-              src="/5aca0d6c-7f62-420d-9299-e85108fa6c39 copy.png" 
+              src="https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=400" 
               alt="Satyam" 
               className="w-full h-full object-cover"
             />

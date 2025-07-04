@@ -198,7 +198,7 @@ const Results: React.FC = () => {
             <p className="text-lg md:text-2xl font-bold text-white mb-4">
               {getPerformanceMessage(results.percentage)}
             </p>
-            <p className="text-white/80 text-sm md:text-lg">
+            <p className="text-white/80 text-base md:text-xl font-semibold">
               {results.totalScore} / {results.totalMarks} marks
             </p>
           </div>

@@ -34,10 +34,9 @@ const History: React.FC = () => {
     setShowDetailModal(true);
   };
 
-  // Mock function to get test questions and user answers
+  // Function to get test details with all questions
   const getTestDetails = (attempt: any) => {
-    // This would normally fetch from your database
-    // For now, returning mock data with all questions
+    // Extended mock data with more questions to show full test
     return {
       sections: [
         {
@@ -87,6 +86,33 @@ const History: React.FC = () => {
               userAnswer: "50",
               isCorrect: true,
               marks: 2
+            },
+            {
+              id: "q6",
+              question: "Which number comes next: 1, 4, 9, 16, __?",
+              options: ["20", "25", "30", "36"],
+              correctAnswer: "25",
+              userAnswer: "25",
+              isCorrect: true,
+              marks: 2
+            },
+            {
+              id: "q7",
+              question: "If all roses are flowers and some flowers are red, then:",
+              options: ["All roses are red", "Some roses are red", "No roses are red", "Cannot be determined"],
+              correctAnswer: "Cannot be determined",
+              userAnswer: "Some roses are red",
+              isCorrect: false,
+              marks: 0
+            },
+            {
+              id: "q8",
+              question: "Complete: CAT is to KITTEN as DOG is to ___",
+              options: ["PUPPY", "BARK", "TAIL", "BONE"],
+              correctAnswer: "PUPPY",
+              userAnswer: "PUPPY",
+              isCorrect: true,
+              marks: 2
             }
           ]
         },
@@ -110,6 +136,47 @@ const History: React.FC = () => {
               userAnswer: "8",
               isCorrect: false,
               marks: 0
+            },
+            {
+              id: "q8",
+              question: "The area of a rectangle with length 8m and width 5m is:",
+              options: ["40 sq m", "26 sq m", "13 sq m", "45 sq m"],
+              correctAnswer: "40 sq m",
+              userAnswer: "40 sq m",
+              isCorrect: true,
+              marks: 3
+            },
+            {
+              id: "q9",
+              question: "What is 25% of 80?",
+              options: ["15", "20", "25", "30"],
+              correctAnswer: "20",
+              userAnswer: "20",
+              isCorrect: true,
+              marks: 2
+            },
+            {
+              id: "q10",
+              question: "If a train travels 60 km in 45 minutes, what is its speed in km/h?",
+              options: ["75", "80", "85", "90"],
+              correctAnswer: "80",
+              userAnswer: "75",
+              isCorrect: false,
+              marks: 0
+            }
+          ]
+        },
+        {
+          name: "Language",
+          questions: [
+            {
+              id: "q11",
+              question: "Choose the correct synonym for 'Happy':",
+              options: ["Sad", "Joyful", "Angry", "Tired"],
+              correctAnswer: "Joyful",
+              userAnswer: "Joyful",
+              isCorrect: true,
+              marks: 2
             }
           ]
         }
@@ -339,7 +406,7 @@ const History: React.FC = () => {
                         <p className={`text-xs md:text-sm flex items-center space-x-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                           <Calendar size={12} />
                           <span>{new Date(attempt.date).toLocaleDateString()}</span>
-                          <span className="ml-2">
+                          <span className="text-xs">
                             {new Date(attempt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </p>
@@ -349,12 +416,16 @@ const History: React.FC = () => {
                       <div className="text-right">
                         <p className={`text-sm md:text-lg font-bold ${
                           darkMode 
-                            ? 'bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent'
+                            ? 'text-purple-400'
                             : 'text-purple-600'
                         }`}>
                           {attempt.percentage}%
                         </p>
-                        <p className={`text-xs md:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <p className={`text-xs font-medium ${
+                          darkMode 
+                            ? 'text-cyan-400'
+                            : 'text-purple-600'
+                        }`}>
                           {attempt.score}/{attempt.totalMarks}
                         </p>
                       </div>
@@ -396,7 +467,7 @@ const History: React.FC = () => {
                   <div>
                     <h2 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedAttempt.testName}</h2>
                     <p className={`text-sm md:text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Score: {selectedAttempt.percentage}% ({selectedAttempt.score}/{selectedAttempt.totalMarks})
+                      Score: {selectedAttempt.percentage}% ({selectedAttempt.score}/{selectedAttempt.totalMarks} marks)
                     </p>
                   </div>
                   <button

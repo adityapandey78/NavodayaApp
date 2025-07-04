@@ -39,6 +39,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasPendingAttempts, setHasPendingAttempts] = useState(false);
+  const [submittedAttempts, setSubmittedAttempts] = useState<Set<string>>(new Set());
   const [attemptSaved, setAttemptSaved] = useState(false);
 
   // Check for pending attempts
@@ -133,6 +134,12 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addTestAttempt = async (attempt: TestAttempt) => {
     if (user) {
+      // Prevent duplicate submissions using attempt ID
+      if (submittedAttempts.has(attempt.id)) {
+        console.log('Attempt already submitted, skipping duplicate');
+        return;
+      }
+      
       try {
         // Prevent duplicate submissions
         if (attemptSaved) {
@@ -169,6 +176,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
 
             setTestAttempts(prev => [formattedAttempt, ...prev]);
+            setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
             setAttemptSaved(true);
             showSuccess('Test results saved successfully!');
           }
@@ -201,6 +209,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Add to local state for immediate display
         setTestAttempts(prev => [attempt, ...prev]);
+        setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
       }
     } else {
       // Guest user - save locally only
@@ -211,6 +220,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearUserAnswers = () => {
     setUserAnswers([]);
+    setSubmittedAttempts(new Set()); // Clear submitted attempts when starting new test
     setAttemptSaved(false);
   };
 
