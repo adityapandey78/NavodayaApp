@@ -19,30 +19,25 @@ export default function Admin() {
   const [tsCode, setTsCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('connected');
+  const [loginAttempting, setLoginAttempting] = useState(false);
 
   // Check connection status with better detection
   const checkConnectionStatus = async () => {
-    setConnectionStatus('checking');
+    if (!navigator.onLine) {
+      setConnectionStatus('disconnected');
+      return false;
+    }
     
     try {
-      if (!navigator.onLine) {
-        setConnectionStatus('disconnected');
-        return;
-      }
-
       // Test Supabase connection
-      const canConnect = await networkService.checkSupabaseConnection(8000);
+      const canConnect = await networkService.checkSupabaseConnection(3000); // Reduced timeout
       setConnectionStatus(canConnect ? 'connected' : 'disconnected');
-      
-      if (canConnect) {
-        console.log('Database connection verified');
-      } else {
-        console.warn('Database connection failed');
-      }
+      return canConnect;
     } catch (error) {
       console.error('Connection check failed:', error);
       setConnectionStatus('disconnected');
+      return false;
     }
   };
 
@@ -50,21 +45,17 @@ export default function Admin() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      checkConnectionStatus();
-      if (isLoggedIn) {
-        setTimeout(() => loadTests(), 1000);
-      }
+      setConnectionStatus('connected'); // Assume connected when online
     };
     
     const handleOffline = () => {
       setIsOnline(false);
       setConnectionStatus('disconnected');
-      console.warn('Admin offline - functions require internet');
     };
 
-    // Initial check
-    if (isLoggedIn) {
-      checkConnectionStatus();
+    // Initial check - only if offline
+    if (!navigator.onLine) {
+      setConnectionStatus('disconnected');
     }
 
     window.addEventListener('online', handleOnline);
@@ -123,32 +114,41 @@ export default function Admin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Always check connection status first
+    setLoginAttempting(true);
+    
+    // Quick validation
+    if (credentials.username !== 'admin' || credentials.password !== 'admin123') {
+      showError('❌ Invalid Credentials\n\nPlease check your username and password.');
+      setLoginAttempting(false);
+      return;
+    }
+    
+    // Check basic connectivity
     if (!navigator.onLine) {
       showError('❌ No Internet Connection\n\nAdmin panel requires an active internet connection to:\n• Access the database\n• Manage tests\n• Upload content\n\nPlease connect to the internet and try again.');
+      setLoginAttempting(false);
       return;
     }
     
-    // Test database connection
+    // Quick connection test in background
     try {
-      await checkConnectionStatus();
-      
-      if (connectionStatus !== 'connected') {
-        showError('❌ Database Connection Failed\n\nCannot connect to the database server.\n\nPlease:\n1. Check your internet connection\n2. Wait a moment and try again\n3. Contact support if the problem persists');
-        return;
-      }
-    } catch (error) {
-      showError('❌ Connection Error\n\nFailed to verify database connection.\n\nPlease check your internet and try again.');
-      return;
-    }
-    
-    if (credentials.username === 'admin' && credentials.password === 'admin123') {
+      // Login immediately for better UX
       setIsLoggedIn(true);
       localStorage.setItem('admin-logged-in', 'true');
-      showSuccess('Admin login successful');
-    } else {
-      showError('Invalid credentials');
+      showSuccess('✅ Admin login successful');
+      
+      // Test connection in background
+      const canConnect = await checkConnectionStatus();
+      if (!canConnect) {
+        showWarning('⚠️ Limited Connectivity\n\nSome admin functions may be limited due to connection issues.');
+      }
+      
+    } catch (error) {
+      // Don't block login for connection issues
+      showWarning('⚠️ Connection Warning\n\nLogged in successfully, but some features may be limited.');
     }
+    
+    setLoginAttempting(false);
   };
 
   const handleLogout = () => {
@@ -160,7 +160,7 @@ export default function Admin() {
   };
 
   const toggleTestStatus = async (testId: string) => {
-    if (connectionStatus !== 'connected') {
+    if (!navigator.onLine) {
       showError('Database connection required for this action');
       return;
     }
@@ -185,7 +185,7 @@ export default function Admin() {
   };
 
   const deleteTest = async (testId: string) => {
-    if (connectionStatus !== 'connected') {
+    if (!navigator.onLine) {
       showError('Database connection required for this action');
       return;
     }
@@ -205,7 +205,7 @@ export default function Admin() {
   };
 
   const handleTsUpload = async () => {
-    if (connectionStatus !== 'connected') {
+    if (!navigator.onLine) {
       showError('Database connection required to create tests');
       return;
     }
@@ -345,12 +345,6 @@ export default function Admin() {
               Enter your credentials to access the admin panel
             </p>
             <div className="flex items-center justify-center space-x-2 mt-3">
-              {connectionStatus === 'checking' && (
-                <>
-                  <RefreshCw size={16} className="text-yellow-300 animate-spin" />
-                  <span className="text-yellow-200 text-sm">Checking connection...</span>
-                </>
-              )}
               {connectionStatus === 'connected' && (
                 <>
                   <Database size={16} className="text-green-300" />
@@ -359,7 +353,7 @@ export default function Admin() {
               )}
               {connectionStatus === 'disconnected' && (
                 <>
-                  <AlertCircle size={16} className="text-red-300" />
+                  <WifiOff size={16} className="text-red-300" />
                   <span className="text-red-200 text-sm">Connection Failed</span>
                 </>
               )}
@@ -398,15 +392,23 @@ export default function Admin() {
             <div className="flex space-x-2">
               <button
                 type="submit"
-                disabled={!navigator.onLine}
-                className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-500 disabled:to-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300"
+                disabled={!navigator.onLine || loginAttempting}
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-500 disabled:to-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2"
               >
-                {navigator.onLine ? 'Login' : 'Internet Required'}
+                {loginAttempting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Logging in...</span>
+                  </>
+                ) : (
+                  <span>{navigator.onLine ? 'Login' : 'Internet Required'}</span>
+                )}
               </button>
               <button
                 type="button"
                 onClick={checkConnectionStatus}
-                className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors"
+                disabled={loginAttempting}
+                className="bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white p-2 rounded-lg transition-colors"
                 title="Refresh Connection"
               >
                 <RefreshCw size={20} className={connectionStatus === 'checking' ? 'animate-spin' : ''} />
@@ -460,7 +462,7 @@ export default function Admin() {
         </div>
 
         {/* Connection Warning */}
-        {connectionStatus !== 'connected' && (
+        {connectionStatus === 'disconnected' && (
           <div className={`rounded-2xl p-4 border ${
             darkMode 
               ? 'glass-dark border-red-500/30' 
@@ -471,10 +473,7 @@ export default function Admin() {
               <div>
                 <p className={`font-bold ${darkMode ? 'text-red-200' : 'text-red-800'}`}>Database Connection Required</p>
                 <p className={`text-sm ${darkMode ? 'text-red-300' : 'text-red-600'}`}>
-                  {connectionStatus === 'checking' 
-                    ? 'Checking database connection...' 
-                    : 'Admin functions require a stable database connection. Please check your internet and try refreshing.'
-                  }
+                  Admin functions require a stable database connection. Please check your internet and try refreshing.
                 </p>
               </div>
             </div>
@@ -531,7 +530,7 @@ export default function Admin() {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => toggleTestStatus(test.id)}
-                      disabled={connectionStatus !== 'connected'}
+                      disabled={!navigator.onLine}
                       className={`p-2 rounded-lg transition-colors ${
                         test.isLive 
                           ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30' 
@@ -544,7 +543,7 @@ export default function Admin() {
                     
                     <button
                       onClick={() => deleteTest(test.id)}
-                      disabled={connectionStatus !== 'connected'}
+                      disabled={!navigator.onLine}
                       className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
                       title="Delete Test"
                     >
@@ -557,9 +556,9 @@ export default function Admin() {
               {tests.length === 0 && !loading && (
                 <div className="text-center py-8">
                   <p className={darkMode ? 'text-white/80' : 'text-gray-600'}>
-                    {connectionStatus === 'connected' ? 'No tests found' : 'Connect to database to load tests'}
+                    {navigator.onLine ? 'No tests found' : 'Connect to internet to load tests'}
                   </p>
-                  {connectionStatus === 'connected' && (
+                  {navigator.onLine && (
                     <p className={`text-sm mt-2 ${darkMode ? 'text-white/60' : 'text-gray-500'}`}>Upload a test to get started</p>
                   )}
                 </div>
@@ -633,11 +632,11 @@ export default function Admin() {
                   </button>
                   <button
                     onClick={handleTsUpload}
-                    disabled={!tsCode.trim() || connectionStatus !== 'connected'}
+                    disabled={!tsCode.trim() || !navigator.onLine}
                     className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium transition-all duration-300 text-sm md:text-base"
                   >
                     <Upload size={20} />
-                    <span>{connectionStatus === 'connected' ? 'Save to Database' : 'Connection Required'}</span>
+                    <span>{navigator.onLine ? 'Save to Database' : 'Internet Required'}</span>
                   </button>
                 </div>
               </div>
