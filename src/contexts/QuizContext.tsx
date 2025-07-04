@@ -133,26 +133,21 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addTestAttempt = async (attempt: TestAttempt) => {
+    // Prevent multiple submissions for the same attempt
+    if (submittedAttempts.has(attempt.id) || attemptSaved) {
+      console.log('Attempt already processed, skipping');
+      return;
+    }
+    
+    // Mark as being processed
+    setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
+    setAttemptSaved(true);
+    
     if (user) {
       try {
-        // Prevent duplicate submissions using attempt ID
-        if (submittedAttempts.has(attempt.id)) {
-          console.log('Attempt already submitted, skipping duplicate');
-          return;
-        }
-        
-        // Prevent duplicate submissions
-        if (attemptSaved) {
-          console.log('Attempt already saved, skipping duplicate submission');
-          return;
-        }
-        
-        // Mark as submitted immediately to prevent duplicates
-        setSubmittedAttempts(prev => new Set(prev).add(attempt.id));
-        
         // Check if online - REQUIRED for submission
         if (!networkService.isOnline()) {
-          throw new Error('Internet connection required to submit test results');
+          throw new Error('Internet connection required');
         }
         
         // Always try to save online for test submissions
@@ -188,18 +183,12 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
 
           setTestAttempts(prev => [formattedAttempt, ...prev]);
-          setAttemptSaved(true);
           showSuccess('Test results submitted successfully!');
         }
       } catch (error: any) {
         console.error('Error saving attempt:', error);
         
-        // Remove from submitted attempts if submission failed
-        setSubmittedAttempts(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(attempt.id);
-          return newSet;
-        });
+        // Don't reset flags to prevent infinite retries
         
         if (error.message.includes('internet') || error.message.includes('connection') || !networkService.isOnline()) {
           // Save to pending only as a backup, but show error for submission failure
@@ -221,9 +210,9 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, user.id);
           
           setHasPendingAttempts(true);
-          showError('Failed to submit test results online. Results saved locally for later upload.');
+          showError('❌ Submission Failed\n\nInternet connection required to submit test results.\n\nResults saved locally and will be uploaded when you reconnect.');
         } else {
-          showError(`Failed to submit test results: ${error.message}`);
+          showError(`❌ Submission Failed\n\n${error.message}\n\nPlease try again with a stable internet connection.`);
         }
         
         // Add to local state for immediate display even if submission failed
@@ -232,7 +221,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       // Guest user - save locally only
       setTestAttempts(prev => [attempt, ...prev]);
-      showWarning('Results saved locally (guest mode). Sign in to submit results online.');
+      showWarning('📱 Guest Mode\n\nResults saved locally only.\n\nSign in to submit results online and sync across devices.');
     }
   };
 

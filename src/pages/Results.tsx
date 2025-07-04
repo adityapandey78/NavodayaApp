@@ -17,6 +17,11 @@ const Results: React.FC = () => {
 
   useEffect(() => {
     const loadTestAndCalculateResults = async () => {
+      // Prevent multiple executions
+      if (attemptSaved) {
+        return;
+      }
+      
       try {
         // Get test data from cache first
         let foundTest = null;
@@ -88,8 +93,8 @@ const Results: React.FC = () => {
         setResults(resultData);
 
         // Save to history only once
-        if (!attemptSaved && currentAttemptId && userAnswers.length > 0) {
-          setAttemptSaved(true); // Set this first to prevent multiple submissions
+        if (currentAttemptId && userAnswers.length > 0) {
+          setAttemptSaved(true); // Prevent multiple submissions
           
           const attempt = {
             id: currentAttemptId,
@@ -105,7 +110,13 @@ const Results: React.FC = () => {
             userAnswers: userAnswers
           };
 
-          await addTestAttempt(attempt);
+          // Add attempt with proper error handling
+          try {
+            await addTestAttempt(attempt);
+          } catch (error) {
+            console.error('Failed to save attempt:', error);
+            // Don't reset attemptSaved to prevent infinite retries
+          }
           
           if (isOnline) {
             showInfo('Results saved successfully!');
@@ -130,7 +141,7 @@ const Results: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [testId, testType, userAnswers, navigate, addTestAttempt, currentAttemptId, attemptSaved, isOnline]);
+  }, [testId, testType, userAnswers, navigate, addTestAttempt, currentAttemptId, attemptSaved, isOnline, showWarning, showInfo]);
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-400';

@@ -53,7 +53,7 @@ const Dashboard: React.FC = () => {
 
   const handleStartTest = () => {
     if (!isOnline) {
-      showError('Internet connection required to start a test. Please connect and try again.');
+      showError('🌐 Internet Connection Required\n\nYou need an active internet connection to:\n• Load test questions\n• Submit your answers\n• Save your results\n\nPlease connect to the internet and try again.');
       return;
     }
     navigate('/quiz-selection');
@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
 
   const handleSyncPending = async () => {
     if (!isOnline) {
-      showError('Internet connection required to upload results.');
+      showError('🌐 Internet Connection Required\n\nPlease connect to the internet to upload your pending test results.');
       return;
     }
     
@@ -278,12 +278,12 @@ const Dashboard: React.FC = () => {
                 <div className="text-left">
                   <p className={`font-bold text-sm md:text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>Take New Test</p>
                   <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
-                    {isOnline ? 'Start practicing now' : 'Internet required to start'}
+                    {isOnline ? 'Start practicing now' : '🌐 Internet connection required'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                {!isOnline && <AlertCircle size={16} className={darkMode ? 'text-red-400' : 'text-red-500'} />}
+                {!isOnline && <AlertCircle size={20} className={darkMode ? 'text-red-400' : 'text-red-500'} />}
                 <div className={`text-lg md:text-2xl group-hover:translate-x-2 transition-transform ${darkMode ? 'text-white' : 'text-gray-900'}`}>→</div>
               </div>
             </div>

@@ -70,6 +70,12 @@ const QuizSelection: React.FC = () => {
   const sainikTests = availableTests.filter(test => test.testType === 'sainik');
 
   const startTest = (testType: string, testId: string) => {
+    // Check internet connection before starting test
+    if (!navigator.onLine) {
+      showError('🌐 Internet Connection Required\n\nYou need an active internet connection to:\n• Load test questions\n• Submit your answers\n• Save your results\n\nPlease connect to the internet and try again.');
+      return;
+    }
+    
     navigate(`/quiz/${testType}/${testId}`);
   };
 
