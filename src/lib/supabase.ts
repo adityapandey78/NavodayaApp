@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get environment variables with hardcoded fallbacks for production
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://doibiltyhcqvccsnggwl.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvaWJpbHR5aGNxdmNjc25nZ3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1NTYwMzMsImV4cCI6MjA2NzEzMjAzM30.INuR6Q_0AU5B0tjw51s25Jz7jC63GAL5CG0C84sRNDg';
+// Get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Initialize Supabase client
 let supabase: any = null;
@@ -110,7 +110,7 @@ const networkService = {
   isOnline: () => navigator.onLine,
   
   // Check if we can reach Supabase with timeout
-  checkSupabaseConnection: async (timeoutMs: number = 2000): Promise<boolean> => {
+  checkSupabaseConnection: async (timeoutMs: number = 8000): Promise<boolean> => {
     if (!isSupabaseAvailable || !supabase) {
       console.warn('Supabase not available for connection check');
       return false;
@@ -123,15 +123,7 @@ const networkService = {
       });
 
       // Simple query to test connection
-      const connectionPromise = supabase
-        .from('tests')
-        .select('id')
-        .limit(1)
-        .single()
-        .catch((error: any) => {
-          // Mark promise as handled to prevent unhandled rejection logs
-          throw error;
-        });
+      const connectionPromise = supabase.from('tests').select('count', { count: 'exact', head: true });
       
       await Promise.race([connectionPromise, timeoutPromise]);
       
@@ -152,18 +144,18 @@ export const testService = {
   // Check network and Supabase connection with better error handling
   checkConnection: async (skipNetworkCheck: boolean = false): Promise<boolean> => {
     // For admin functions, we need both network and Supabase
-    if (!skipNetworkCheck && !networkService.isOnline()) {
-      throw new Error('No internet connection detected. Please check your network settings.');
-    }
+    // if (!skipNetworkCheck && !networkService.isOnline()) {
+    //   throw new Error('No internet connection detected. Please check your network settings.');
+    // }
     
     if (!isSupabaseAvailable || !supabase) {
       throw new Error('Database connection not available. Please check your configuration.');
     }
 
     // Quick connection test with timeout
-    const canReachSupabase = await networkService.checkSupabaseConnection(5000);
+    const canReachSupabase = await networkService.checkSupabaseConnection(8000);
     if (!canReachSupabase) {
-      throw new Error('Cannot reach database server. Please check your internet connection.');
+      throw new Error('Cannot reach database server. The server may be temporarily unavailable.');
     }
     
     return true;
@@ -172,8 +164,10 @@ export const testService = {
   // Get all live tests with caching
   async getLiveTests(): Promise<any[]> {
     try {
-      // Always try to fetch from Supabase first
-      await this.checkConnection();
+      // Try to fetch from Supabase first, but don't require connection check
+      if (!isSupabaseAvailable || !supabase) {
+        throw new Error('Database not available');
+      }
       
       const { data, error } = await supabase
         .from('tests')
@@ -206,7 +200,7 @@ export const testService = {
     } catch (error: any) {
       console.error('Error fetching tests from Supabase:', error);
       
-      // Always try to use cached data as fallback when database connection fails
+      // Try to use cached data as fallback when database connection fails
       const cachedTests = cacheService.getCachedTests();
       if (cachedTests.length > 0) {
         console.warn('Using cached tests - database connection failed, falling back to cached data');
@@ -214,19 +208,17 @@ export const testService = {
       }
       
       // Only throw error if both live fetch and cached fallback fail
-      if (networkService.isOnline()) {
-        throw new Error(`Database connection failed: ${error.message}`);
-      } else {
-        throw new Error('No internet connection and no cached data available.');
-      }
+      throw new Error(`Failed to load tests: ${error.message || 'Database connection failed'}`);
     }
   },
 
   // Get test by ID (with cache fallback for quiz-taking)
   async getTestById(id: string): Promise<any | null> {
     try {
-      // Try Supabase first
-      await this.checkConnection();
+      // Try Supabase first, but don't require connection check
+      if (!isSupabaseAvailable || !supabase) {
+        throw new Error('Database not available');
+      }
       
       const { data, error } = await supabase
         .from('tests')
@@ -253,11 +245,11 @@ export const testService = {
     } catch (error: any) {
       console.error('Error fetching test by ID:', error);
       
-      // Always try cached data as fallback when Supabase fails
+      // Try cached data as fallback when Supabase fails
       const cachedTests = cacheService.getCachedTests();
       const test = cachedTests.find(t => t.id === id);
       if (test) {
-        console.warn('Using cached test data - Supabase connection failed, falling back to cache');
+        console.warn('Using cached test data - database connection failed, falling back to cache');
         return test;
       }
       
@@ -267,7 +259,9 @@ export const testService = {
 
   // Admin functions - ALWAYS require online connection
   async getAllTests(): Promise<DatabaseTest[]> {
-    await this.checkConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database not available');
+    }
     
     const { data, error } = await supabase
       .from('tests')
@@ -283,7 +277,9 @@ export const testService = {
   },
 
   async createTest(testData: any): Promise<DatabaseTest | null> {
-    await this.checkConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database not available');
+    }
     
     const { data, error } = await supabase
       .from('tests')
@@ -312,7 +308,9 @@ export const testService = {
   },
 
   async updateTest(id: string, testData: any): Promise<DatabaseTest | null> {
-    await this.checkConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database not available');
+    }
     
     const { data, error } = await supabase
       .from('tests')
@@ -342,7 +340,9 @@ export const testService = {
   },
 
   async toggleTestStatus(id: string, isLive: boolean): Promise<boolean> {
-    await this.checkConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database not available');
+    }
     
     const { error } = await supabase
       .from('tests')
@@ -361,7 +361,9 @@ export const testService = {
   },
 
   async deleteTest(id: string): Promise<boolean> {
-    await this.checkConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database not available');
+    }
     
     const { error } = await supabase
       .from('tests')
@@ -428,7 +430,9 @@ export const attemptService = {
 
   // Get user's test attempts
   async getUserAttempts(userId: string): Promise<any[]> {
-    await testService.checkConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database not available');
+    }
     
     const { data, error } = await supabase
       .from('test_attempts')
@@ -457,7 +461,9 @@ export const attemptService = {
 
   // Save test attempt (requires online connection)
   async saveAttempt(attemptData: any, userId: string): Promise<DatabaseTestAttempt | null> {
-    await testService.checkConnection();
+    if (!isSupabaseAvailable || !supabase) {
+      throw new Error('Database not available');
+    }
     
     const { data, error } = await supabase
       .from('test_attempts')
