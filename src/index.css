@@ -80,75 +80,82 @@
 /* Extra small mobile optimizations for 320px */
 @media (max-width: 320px) {
   /* Increase base font sizes for better readability */
-  .xs-mobile-text-xs {
-    font-size: 0.75rem;
-    line-height: 1rem;
+  /* Increased font sizes for better readability on 320px screens */
+  body, html {
+    font-size: 16px; /* Increase base font size */
   }
   
-  .xs-mobile-text-sm {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+  /* Override text sizes to be larger */
+  .text-xs {
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
   }
   
-  .xs-mobile-text-base {
-    font-size: 1rem;
-    line-height: 1.5rem;
+  .text-sm {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
   }
   
-  .xs-mobile-text-lg {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
+  .text-base {
+    font-size: 1.125rem !important;
+    line-height: 1.75rem !important;
   }
   
-  .xs-mobile-text-xl {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
+  .text-lg {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
   }
   
-  .xs-mobile-text-2xl {
-    font-size: 1.375rem;
-    line-height: 1.875rem;
+  .text-xl {
+    font-size: 1.375rem !important;
+    line-height: 1.875rem !important;
   }
   
-  .xs-mobile-text-3xl {
-    font-size: 1.625rem;
-    line-height: 2.125rem;
+  .text-2xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
   }
   
-  /* Better spacing for ultra-small screens */
-  .xs-mobile-text-xs {
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+  .text-3xl {
+    font-size: 1.75rem !important;
+    line-height: 2.25rem !important;
   }
   
-  .xs-mobile-text-sm {
-    font-size: 0.75rem;
-    line-height: 1rem;
+  .text-4xl {
+    font-size: 2rem !important;
+    line-height: 2.5rem !important;
   }
   
-  .xs-mobile-text-base {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+  /* Specific improvements for quiz questions and answers */
+  .quiz-question {
+    font-size: 1.125rem !important;
+    line-height: 1.75rem !important;
   }
   
-  .xs-mobile-text-lg {
-    font-size: 1rem;
-    line-height: 1.5rem;
+  .quiz-option {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
   }
   
-  .xs-mobile-text-xl {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
+  /* Dashboard specific improvements */
+  .dashboard-title {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
   }
   
-  .xs-mobile-text-2xl {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
+  .dashboard-subtitle {
+    font-size: 1.125rem !important;
+    line-height: 1.75rem !important;
   }
   
-  .xs-mobile-text-3xl {
-    font-size: 1.5rem;
-    line-height: 2rem;
+  .dashboard-stat {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+  
+  .dashboard-label {
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
   }
   
   .xs-mobile-spacing-sm {
@@ -170,7 +177,7 @@
   
   /* Better chart margins for small screens */
   .recharts-wrapper {
-    margin-left: -10px !important;
+    margin-left: -5px !important;
   }
 }
 

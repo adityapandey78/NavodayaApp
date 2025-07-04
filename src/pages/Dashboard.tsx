@@ -191,6 +191,7 @@ const Dashboard: React.FC = () => {
                   )}
                 </div>
                 <h1 className={`text-lg sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-2 md:mb-4 leading-tight ${
+                <h1 className={`dashboard-title text-lg sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-2 md:mb-4 leading-tight ${
                   darkMode 
                     ? 'bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent'
                     : 'text-white'
@@ -198,6 +199,7 @@ const Dashboard: React.FC = () => {
                   Welcome back,<br className="sm:hidden" /> Satyam!
                 </h1>
                 <p className={`text-sm sm:text-base md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-6 leading-relaxed ${
+                <p className={`dashboard-subtitle text-sm sm:text-base md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-6 leading-relaxed ${
                   darkMode ? 'text-blue-100' : 'text-white/90'
                 }`}>Ready to ace your next test?</p>
                 
@@ -207,19 +209,19 @@ const Dashboard: React.FC = () => {
                     darkMode ? 'bg-white/10' : 'bg-white/20'
                   }`}>
                     <Target size={12} className={`${darkMode ? 'text-cyan-400' : 'text-cyan-200'} sm:w-4 sm:h-4`} />
-                    <span className={`text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>{totalAttempts} Tests</span>
+                    <span className={`dashboard-label text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>{totalAttempts} Tests</span>
                   </div>
                   <div className={`flex items-center space-x-1.5 sm:space-x-2 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 ${
                     darkMode ? 'bg-white/10' : 'bg-white/20'
                   }`}>
                     <Star size={12} className={`${darkMode ? 'text-yellow-400' : 'text-yellow-200'} sm:w-4 sm:h-4`} />
-                    <span className={`text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>{averageScore}% Avg</span>
+                    <span className={`dashboard-label text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>{averageScore}% Avg</span>
                   </div>
                   <div className={`flex items-center space-x-1.5 sm:space-x-2 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 ${
                     darkMode ? 'bg-white/10' : 'bg-white/20'
                   }`}>
                     <Zap size={12} className={`${darkMode ? 'text-purple-400' : 'text-purple-200'} sm:w-4 sm:h-4`} />
-                    <span className={`text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>Level {Math.floor(totalAttempts / 5) + 1}</span>
+                    <span className={`dashboard-label text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white' : 'text-white/90'}`}>Level {Math.floor(totalAttempts / 5) + 1}</span>
                   </div>
                 </div>
               </div>
@@ -269,8 +271,8 @@ const Dashboard: React.FC = () => {
                 <BookOpen size={16} className="text-white sm:w-5 sm:h-5" />
               </div>
               <div>
-                <p className={`text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Total Tests</p>
-                <p className={`text-lg sm:text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalAttempts}</p>
+                <p className={`dashboard-label text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Total Tests</p>
+                <p className={`dashboard-stat text-lg sm:text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalAttempts}</p>
               </div>
             </div>
           </div>
@@ -285,8 +287,8 @@ const Dashboard: React.FC = () => {
                 <TrendingUp size={16} className="text-white sm:w-5 sm:h-5" />
               </div>
               <div>
-                <p className={`text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Avg Score</p>
-                <p className={`text-lg sm:text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{averageScore}%</p>
+                <p className={`dashboard-label text-xs sm:text-xs md:text-sm font-medium ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Avg Score</p>
+                <p className={`dashboard-stat text-lg sm:text-xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{averageScore}%</p>
               </div>
             </div>
           </div>
