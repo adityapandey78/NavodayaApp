@@ -79,6 +79,43 @@
 
 /* Extra small mobile optimizations for 320px */
 @media (max-width: 320px) {
+  /* Increase base font sizes for better readability */
+  .xs-mobile-text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  
+  .xs-mobile-text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  .xs-mobile-text-base {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  
+  .xs-mobile-text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  
+  .xs-mobile-text-xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+  
+  .xs-mobile-text-2xl {
+    font-size: 1.375rem;
+    line-height: 1.875rem;
+  }
+  
+  .xs-mobile-text-3xl {
+    font-size: 1.625rem;
+    line-height: 2.125rem;
+  }
+  
+  /* Better spacing for ultra-small screens */
   .xs-mobile-text-xs {
     font-size: 0.625rem;
     line-height: 0.875rem;
@@ -124,6 +161,16 @@
   
   .xs-mobile-spacing-lg {
     padding: 1rem;
+  }
+  
+  /* Ensure buttons don't wrap text */
+  .whitespace-nowrap {
+    white-space: nowrap;
+  }
+  
+  /* Better chart margins for small screens */
+  .recharts-wrapper {
+    margin-left: -10px !important;
   }
 }
 

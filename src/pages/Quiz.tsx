@@ -249,6 +249,7 @@ const Quiz: React.FC = () => {
               {currentQuestion.sectionName}
             </span>
             <div className="text-xs sm:text-sm md:text-lg font-medium text-white leading-relaxed">
+            <div className="text-sm sm:text-base md:text-lg font-medium text-white leading-relaxed">
               {showHindi && currentQuestion.questionHi 
                 ? currentQuestion.questionHi 
                 : currentQuestion.question}
@@ -286,7 +287,7 @@ const Quiz: React.FC = () => {
                     <span className="font-bold text-cyan-300 text-xs sm:text-sm md:text-base mt-0.5">
                       {String.fromCharCode(65 + index)}.
                     </span>
-                    <span className="flex-1 text-xs sm:text-sm md:text-base leading-relaxed">{optionText}</span>
+                    <span className="flex-1 text-sm sm:text-base md:text-lg leading-relaxed">{optionText}</span>
                   </div>
                 </button>
               );

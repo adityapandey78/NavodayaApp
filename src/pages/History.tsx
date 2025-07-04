@@ -317,19 +317,21 @@ const History: React.FC = () => {
                 </h2>
                 <div className="h-64 md:h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <LineChart data={chartData} margin={{ left: 0, right: 10, top: 10, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#E5E7EB"} />
                       <XAxis 
                         dataKey="date" 
                         stroke={darkMode ? "#9CA3AF" : "#6B7280"}
-                        fontSize={10}
+                        fontSize={9}
                         angle={-45}
                         textAnchor="end"
-                        height={60}
+                        height={50}
+                        interval={0}
                       />
                       <YAxis 
                         stroke={darkMode ? "#9CA3AF" : "#6B7280"}
-                        fontSize={12}
+                        fontSize={10}
+                        width={30}
                       />
                       <Tooltip 
                         contentStyle={{

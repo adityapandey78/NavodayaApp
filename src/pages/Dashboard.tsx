@@ -155,11 +155,11 @@ const Dashboard: React.FC = () => {
                 onClick={() => navigate('/auth')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${
                   darkMode
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white'
-                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white whitespace-nowrap'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white whitespace-nowrap'
                 }`}
               >
-                Sign In
+                Sign In / Up
               </button>
             </div>
           </div>
