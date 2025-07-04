@@ -27,15 +27,8 @@ export const useToast = () => {
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const showToast = useCallback((
-    message: string, 
-    type: 'error' | 'success' | 'warning' | 'info' = 'info',
-    duration: number = 5000
-  ) => {
-    // Prevent duplicate toasts with same message and type
-    const isDuplicate = toasts.some(toast => 
+    // Prevent duplicate toasts
+    const isDuplicate = toasts.some(toast =>
       toast.message === message && toast.type === type
     );
     

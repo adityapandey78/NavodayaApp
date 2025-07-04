@@ -3,12 +3,14 @@ import { Shield, Upload, Eye, EyeOff, Plus, Trash2, Save, X, FileText, Database,
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { testService, networkService } from '../lib/supabase';
 import { TestData, Question, Section } from '../types/quiz';
 
 const Admin: React.FC = () => {
   const { user } = useAuth();
   const { showError, showSuccess, showWarning, showInfo } = useToast();
+  const { darkMode } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem('admin-logged-in') === 'true';
   });
@@ -35,9 +37,9 @@ const Admin: React.FC = () => {
       setConnectionStatus(canConnect ? 'connected' : 'disconnected');
       
       if (canConnect) {
-        showInfo('Database connection verified');
+        console.log('Database connection verified');
       } else {
-        showWarning('Database connection failed - please check your internet');
+        console.warn('Database connection failed');
       }
     } catch (error) {
       console.error('Connection check failed:', error);
@@ -51,14 +53,14 @@ const Admin: React.FC = () => {
       setIsOnline(true);
       checkConnectionStatus();
       if (isLoggedIn) {
-        setTimeout(() => loadTests(), 1000); // Give connection time to stabilize
+        setTimeout(() => loadTests(), 1000);
       }
     };
     
     const handleOffline = () => {
       setIsOnline(false);
       setConnectionStatus('disconnected');
-      showWarning('You are now offline. Admin functions require internet connection.');
+      console.warn('Admin offline - functions require internet');
     };
 
     // Initial check
@@ -80,7 +82,7 @@ const Admin: React.FC = () => {
     if (!isLoggedIn) return;
     
     if (connectionStatus !== 'connected') {
-      showError('Database connection required for admin functions');
+      console.error('Database connection required for admin functions');
       return;
     }
     
@@ -102,11 +104,11 @@ const Admin: React.FC = () => {
       }));
       
       setTests(formattedTests);
-      showSuccess(`Loaded ${formattedTests.length} tests from database`);
+      console.log(`Loaded ${formattedTests.length} tests from database`);
       
     } catch (error: any) {
       console.error('Error loading tests:', error);
-      showError(`Failed to load tests: ${error.message}`);
+      console.error(`Failed to load tests: ${error.message}`);
       setTests([]);
     } finally {
       setLoading(false);
@@ -149,7 +151,7 @@ const Admin: React.FC = () => {
     localStorage.removeItem('admin-logged-in');
     setCredentials({ username: '', password: '' });
     setTests([]);
-    showInfo('Logged out successfully');
+    console.log('Logged out successfully');
   };
 
   const toggleTestStatus = async (testId: string) => {
@@ -321,12 +323,20 @@ const Admin: React.FC = () => {
     return (
       <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
         darkMode 
+          ? 'bg-black' 
+          : 'bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600'
+      }`}>
+        darkMode 
           ? 'bg-gradient-to-br from-purple-600 via-blue-500 to-cyan-400' 
           : 'bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600'
       }`}>
         <div className={`max-w-md w-full rounded-2xl p-6 md:p-8 border shadow-2xl ${
           darkMode 
             ? 'bg-white/10 backdrop-blur-lg border-white/20' 
+            : 'bg-white/20 backdrop-blur-lg border-white/30'
+        <div className={`max-w-md w-full rounded-2xl p-6 md:p-8 border shadow-2xl ${
+          darkMode 
+            ? 'glass-dark border-white/20' 
             : 'bg-white/20 backdrop-blur-lg border-white/30'
         }`}>
           <div className="text-center mb-8">
@@ -422,6 +432,10 @@ const Admin: React.FC = () => {
   return (
     <div className={`min-h-screen p-4 transition-colors duration-300 ${
       darkMode 
+        ? 'bg-black' 
+        : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+    }`}>
+      darkMode 
         ? 'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500' 
         : 'bg-gradient-to-br from-blue-50 to-indigo-100'
     }`}>
@@ -454,12 +468,16 @@ const Admin: React.FC = () => {
 
         {/* Connection Warning */}
         {connectionStatus !== 'connected' && (
-          <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-4">
+          <div className={`rounded-2xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-red-500/30' 
+              : 'bg-red-50 border-red-200'
+          }`}>
             <div className="flex items-center space-x-3">
-              <AlertCircle size={24} className="text-red-300" />
+              <AlertCircle size={24} className={darkMode ? 'text-red-400' : 'text-red-600'} />
               <div>
-                <p className="font-bold text-red-200">Database Connection Required</p>
-                <p className="text-red-300 text-sm">
+                <p className={`font-bold ${darkMode ? 'text-red-200' : 'text-red-800'}`}>Database Connection Required</p>
+                <p className={`text-sm ${darkMode ? 'text-red-300' : 'text-red-600'}`}>
                   {connectionStatus === 'checking' 
                     ? 'Checking database connection...' 
                     : 'Admin functions require a stable database connection. Please check your internet and try refreshing.'
@@ -471,9 +489,13 @@ const Admin: React.FC = () => {
         )}
 
         {/* Test Management */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+        <div className={`rounded-2xl p-4 md:p-6 border ${
+          darkMode 
+            ? 'glass-dark border-white/20' 
+            : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+        }`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">Test Management</h2>
+            <h2 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Test Management</h2>
             <div className="flex space-x-2">
               <button
                 onClick={() => setShowTsUpload(true)}
@@ -488,21 +510,25 @@ const Admin: React.FC = () => {
 
           {loading ? (
             <div className="text-center py-8">
-              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-white/80">Loading tests...</p>
+              <div className={`w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 ${
+                darkMode ? 'border-white/30 border-t-white' : 'border-gray-300 border-t-gray-600'
+              }`}></div>
+              <p className={darkMode ? 'text-white/80' : 'text-gray-600'}>Loading tests...</p>
             </div>
           ) : (
             <div className="space-y-3">
               {tests.map((test) => (
-                <div key={test.id} className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
+                <div key={test.id} className={`flex items-center justify-between p-3 md:p-4 rounded-xl ${
+                  darkMode ? 'bg-white/10' : 'bg-gray-100'
+                }`}>
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
                       <span className={`inline-block w-3 h-3 rounded-full ${
                         test.isLive ? 'bg-green-400' : 'bg-red-400'
                       }`}></span>
                       <div>
-                        <h3 className="font-bold text-white">{test.testName}</h3>
-                        <p className="text-white/80 text-sm">
+                        <h3 className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>{test.testName}</h3>
+                        <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                           {test.testType.charAt(0).toUpperCase() + test.testType.slice(1)} • {test.totalMarks} marks • {test.durationInMinutes} min • {test.sections.length} sections
                         </p>
                       </div>
@@ -537,11 +563,11 @@ const Admin: React.FC = () => {
               
               {tests.length === 0 && !loading && (
                 <div className="text-center py-8">
-                  <p className="text-white/80">
+                  <p className={darkMode ? 'text-white/80' : 'text-gray-600'}>
                     {connectionStatus === 'connected' ? 'No tests found' : 'Connect to database to load tests'}
                   </p>
                   {connectionStatus === 'connected' && (
-                    <p className="text-white/60 text-sm mt-2">Upload a test to get started</p>
+                    <p className={`text-sm mt-2 ${darkMode ? 'text-white/60' : 'text-gray-500'}`}>Upload a test to get started</p>
                   )}
                 </div>
               )}
@@ -551,10 +577,16 @@ const Admin: React.FC = () => {
 
         {/* TS Code Upload Modal */}
         {showTsUpload && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+          <div className={`fixed inset-0 flex items-center justify-center p-4 z-50 ${
+            darkMode ? 'bg-black/80' : 'bg-gray-900/80'
+          }`}>
+            <div className={`rounded-2xl p-4 md:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border ${
+              darkMode 
+                ? 'glass-dark border-white/20' 
+                : 'bg-white border-gray-200 shadow-2xl'
+            }`}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">
+                <h2 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Upload Test to Database
                 </h2>
                 <button
@@ -564,26 +596,30 @@ const Admin: React.FC = () => {
                   }}
                   className="p-2 hover:bg-white/10 rounded-lg"
                 >
-                  <X size={20} className="text-white" />
+                  <X size={20} className={darkMode ? 'text-white' : 'text-gray-600'} />
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-white/80' : 'text-gray-700'}`}>
                     Paste your test data here:
                   </label>
                   <textarea
                     value={tsCode}
                     onChange={(e) => setTsCode(e.target.value)}
                     placeholder={sampleTestData}
-                    className="w-full h-64 px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-white/40 font-mono text-sm"
+                    className={`w-full h-64 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 font-mono text-sm ${
+                      darkMode 
+                        ? 'bg-white/10 border-white/20 text-white placeholder-white/40' 
+                        : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
                   />
                 </div>
 
-                <div className="bg-white/10 rounded-lg p-4">
-                  <h3 className="font-medium text-white mb-2">Sample Format:</h3>
-                  <pre className="text-xs text-white/80 overflow-x-auto">
+                <div className={`rounded-lg p-4 ${darkMode ? 'bg-white/10' : 'bg-gray-100'}`}>
+                  <h3 className={`font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Sample Format:</h3>
+                  <pre className={`text-xs overflow-x-auto ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                     {sampleTestData}
                   </pre>
                 </div>
@@ -594,14 +630,18 @@ const Admin: React.FC = () => {
                       setShowTsUpload(false);
                       setTsCode('');
                     }}
-                    className="px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+                    className={`px-4 py-2 md:px-6 md:py-2 rounded-lg transition-colors ${
+                      darkMode 
+                        ? 'bg-white/20 hover:bg-white/30 text-white' 
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                    }`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleTsUpload}
                     disabled={!tsCode.trim() || connectionStatus !== 'connected'}
-                    className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300"
+                    className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium transition-all duration-300 text-sm md:text-base"
                   >
                     <Upload size={20} />
                     <span>{connectionStatus === 'connected' ? 'Save to Database' : 'Connection Required'}</span>
@@ -614,28 +654,44 @@ const Admin: React.FC = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-            <p className="text-white/80 text-sm">Total Tests</p>
-            <p className="text-2xl font-bold text-white">{tests.length}</p>
+          <div className={`rounded-xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-white/20' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
+            <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Total Tests</p>
+            <p className={`text-lg md:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{tests.length}</p>
           </div>
           
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-            <p className="text-white/80 text-sm">Live Tests</p>
-            <p className="text-2xl font-bold text-green-400">
+          <div className={`rounded-xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-white/20' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
+            <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Live Tests</p>
+            <p className={`text-lg md:text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
               {tests.filter(t => t.isLive).length}
             </p>
           </div>
           
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-            <p className="text-white/80 text-sm">Navodaya Tests</p>
-            <p className="text-2xl font-bold text-cyan-400">
+          <div className={`rounded-xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-white/20' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
+            <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Navodaya Tests</p>
+            <p className={`text-lg md:text-2xl font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
               {tests.filter(t => t.testType === 'navodaya').length}
             </p>
           </div>
           
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-            <p className="text-white/80 text-sm">Sainik Tests</p>
-            <p className="text-2xl font-bold text-pink-400">
+          <div className={`rounded-xl p-4 border ${
+            darkMode 
+              ? 'glass-dark border-white/20' 
+              : 'bg-white/80 backdrop-blur-lg border-white/20 shadow-lg'
+          }`}>
+            <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>Sainik Tests</p>
+            <p className={`text-lg md:text-2xl font-bold ${darkMode ? 'text-pink-400' : 'text-pink-600'}`}>
               {tests.filter(t => t.testType === 'sainik').length}
             </p>
           </div>
