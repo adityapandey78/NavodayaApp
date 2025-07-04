@@ -202,19 +202,19 @@ export const testService = {
     } catch (error: any) {
       console.error('Error fetching tests from Supabase:', error);
       
-      // If online but can't reach Supabase, throw error
-      if (networkService.isOnline()) {
-        throw new Error(`Database connection failed: ${error.message}`);
-      }
-      
-      // If offline, try to use cached data for quiz-taking only
+      // Always try to use cached data as fallback when database connection fails
       const cachedTests = cacheService.getCachedTests();
       if (cachedTests.length > 0) {
-        console.warn('Using cached tests - offline mode');
+        console.warn('Using cached tests - database connection failed, falling back to cached data');
         return cachedTests;
       }
       
-      throw new Error('No internet connection and no cached data available.');
+      // Only throw error if both live fetch and cached fallback fail
+      if (networkService.isOnline()) {
+        throw new Error(`Database connection failed: ${error.message}`);
+      } else {
+        throw new Error('No internet connection and no cached data available.');
+      }
     }
   },
 
