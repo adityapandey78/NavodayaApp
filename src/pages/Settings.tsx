@@ -129,22 +129,74 @@ const Settings: React.FC = () => {
           }`}>
             <h2 className={`text-lg md:text-xl font-bold mb-4 md:mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Account</h2>
             
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto">
-                <User size={32} className="text-white" />
+            {/* Welcome Page Style Design */}
+            <div className="relative overflow-hidden rounded-2xl">
+              <div className={`absolute inset-0 ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500' 
+                  : 'bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600'
+              } gradient-animate`}></div>
+              <div className={`relative rounded-2xl p-6 md:p-8 ${
+                darkMode ? 'glass-dark' : 'bg-white/20 backdrop-blur-lg border border-white/30'
+              }`}>
+                <div className="text-center space-y-6">
+                  {/* Avatar with decorations */}
+                  <div className="relative">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden mx-auto mb-4 shadow-2xl float-animation pulse-glow border-4 border-white/20">
+                      <img 
+                        src="/5aca0d6c-7f62-420d-9299-e85108fa6c39 copy copy.png" 
+                        alt="Satyam" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                      <User size={16} className="text-white" />
+                    </div>
+                    {/* Additional sparkles around the image */}
+                    <div className="absolute -top-4 -left-4 w-6 h-6 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
+                      <Shield size={12} className="text-white" />
+                    </div>
+                    <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
+                      <User size={12} className="text-white" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
+                      👋 Join PrepWithSatyam!
+                    </h3>
+                    <p className="text-base md:text-lg text-white/90 mb-4">
+                      Create an account to unlock<br />
+                      <span className="font-bold bg-gradient-to-r from-yellow-400 to-pink-400 bg-clip-text text-transparent">
+                        Premium Features
+                      </span>
+                    </p>
+                    
+                    {/* Features */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center justify-center space-x-3 text-white/90">
+                        <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-green-400 to-blue-500 rounded-full"></div>
+                        <span className="font-medium text-sm md:text-base">Sync Progress Across Devices</span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-3 text-white/90">
+                        <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"></div>
+                        <span className="font-medium text-sm md:text-base">Detailed Performance Analytics</span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-3 text-white/90">
+                        <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"></div>
+                        <span className="font-medium text-sm md:text-base">Secure Cloud Backup</span>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => navigate('/auth')}
+                      className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:from-pink-600 hover:via-purple-600 hover:to-indigo-600 text-white font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 text-sm md:text-lg"
+                    >
+                      Sign In / Sign Up
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Guest Mode</h3>
-                <p className={`text-sm md:text-base ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
-                  Sign in to save your progress online and sync across devices
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/auth')}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-lg"
-              >
-                Sign In / Sign Up
-              </button>
             </div>
           </div>
         )}
