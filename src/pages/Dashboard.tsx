@@ -196,7 +196,6 @@ const Dashboard: React.FC = () => {
                     : 'text-white'
                 }`}>
                   Welcome back,<br className="sm:hidden" /> Satyam!
-                </h1>
                 <p className={`dashboard-subtitle text-sm sm:text-base md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-6 leading-relaxed ${
                   darkMode ? 'text-blue-100' : 'text-white/90'
                 }`}>Ready to ace your next test?</p>
