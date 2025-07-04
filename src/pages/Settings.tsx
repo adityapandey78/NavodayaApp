@@ -101,17 +101,17 @@ const Settings: React.FC = () => {
                 <div className="flex items-center space-x-4">
                   <LogOut size={20} className="text-red-400" />
                   <div>
-                    <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <p className={`card-title font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                       Logout
                     </p>
-                    <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                    <p className={`card-description text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                       Sign out of your account
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium transition-all duration-300 text-sm md:text-base"
+                  className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium transition-all duration-300 btn-text text-sm md:text-base"
                 >
                   Logout
                 </button>
@@ -140,10 +140,10 @@ const Settings: React.FC = () => {
                   <Sun size={20} className="text-yellow-500" />
                 )}
                 <div>
-                  <p className={`font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <p className={`card-title font-bold text-sm md:text-base ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     {darkMode ? 'Dark Mode' : 'Light Mode'}
                   </p>
-                  <p className={`text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                  <p className={`card-description text-xs md:text-sm ${darkMode ? 'text-white/80' : 'text-gray-600'}`}>
                     {darkMode ? 'Easy on the eyes' : 'Bright and clear'}
                   </p>
                 </div>

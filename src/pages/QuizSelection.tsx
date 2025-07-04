@@ -149,7 +149,7 @@ const QuizSelection: React.FC = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-base md:text-xl font-bold text-white">
+                        <h3 className="card-title text-base md:text-xl font-bold text-white">
                           {test.testName}
                         </h3>
                         <Star size={16} className="text-yellow-400" />
@@ -181,7 +181,7 @@ const QuizSelection: React.FC = () => {
                     </div>
                     <button
                       onClick={() => startTest(test.testType, test.id)}
-                      className="w-full md:w-auto md:ml-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-base"
+                      className="w-full md:w-auto md:ml-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg btn-text text-sm md:text-base"
                     >
                       Start Test
                     </button>
@@ -208,7 +208,7 @@ const QuizSelection: React.FC = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-base md:text-xl font-bold text-white">
+                        <h3 className="card-title text-base md:text-xl font-bold text-white">
                           {test.testName}
                         </h3>
                         <Star size={16} className="text-yellow-400" />
@@ -240,7 +240,7 @@ const QuizSelection: React.FC = () => {
                     </div>
                     <button
                       onClick={() => startTest(test.testType, test.id)}
-                      className="w-full md:w-auto md:ml-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-base"
+                      className="w-full md:w-auto md:ml-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg btn-text text-sm md:text-base"
                     >
                       Start Test
                     </button>
@@ -264,7 +264,7 @@ const QuizSelection: React.FC = () => {
               </p>
               <button
                 onClick={loadTests}
-                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-xl font-bold transition-all duration-300 text-sm md:text-base"
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-xl font-bold transition-all duration-300 btn-text text-sm md:text-base"
               >
                 Refresh Tests
               </button>

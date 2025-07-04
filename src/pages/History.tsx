@@ -427,10 +427,10 @@ const History: React.FC = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-medium text-sm md:text-base truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <p className={`card-title font-bold text-sm md:text-base truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                           {attempt.testName}
                         </p>
-                        <p className={`text-xs md:text-sm flex items-center space-x-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <p className={`card-description text-xs md:text-sm flex items-center space-x-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                           <Calendar size={12} />
                           <span>{new Date(attempt.date).toLocaleDateString()}</span>
                           <span className="text-xs ml-2">
@@ -445,7 +445,7 @@ const History: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="text-right">
-                        <p className={`text-sm md:text-lg font-bold ${
+                        <p className={`dashboard-stat text-sm md:text-lg font-bold ${
                           darkMode 
                             ? 'text-purple-400'
                             : 'text-purple-600'
@@ -462,7 +462,7 @@ const History: React.FC = () => {
                       </div>
                       <button
                         onClick={() => viewAttemptDetails(attempt)}
-                        className={`p-2 rounded-lg transition-colors ${
+                       className={`p-2 rounded-lg transition-colors min-h-[44px] ${
                           darkMode 
                             ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
                             : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
@@ -503,7 +503,7 @@ const History: React.FC = () => {
                   </div>
                   <button
                     onClick={() => setShowDetailModal(false)}
-                    className={`p-2 rounded-lg transition-colors ${
+                   className={`p-2 rounded-lg transition-colors min-h-[44px] ${
                       darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
                     }`}
                   >
@@ -535,7 +535,7 @@ const History: React.FC = () => {
                           }`}>
                             Q{questionIndex + 1}.
                           </span>
-                          <p className={`text-sm md:text-base flex-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          <p className={`modal-text text-sm md:text-base flex-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                             {question.question}
                           </p>
                           <div className={`p-1 rounded-full ${
@@ -578,7 +578,7 @@ const History: React.FC = () => {
                                 }`}>
                                   {String.fromCharCode(65 + optionIndex)}.
                                 </span>
-                                <span className={`text-xs md:text-sm ${textClass} flex-1`}>
+                                <span className={`modal-text text-xs md:text-sm ${textClass}`}>
                                   {option}
                                 </span>
                                 <div className="flex items-center space-x-2">
