@@ -145,6 +145,7 @@ const Results: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
+  }, [testType, testId, userAnswers, navigate, addTestAttempt, currentAttemptId, clearUserAnswers, showInfo, isProcessing, isOnline]);
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-400';
