@@ -244,7 +244,7 @@ const Quiz: React.FC = () => {
               </button>
             )}
           </div>
-          <Timer duration={test.durationInMinutes} onTimeUp={handleTimeUp} />
+          <Timer duration={test.durationInMinutes && test.durationInMinutes > 0 ? test.durationInMinutes : 60} onTimeUp={handleTimeUp} />
         </div>
         
         <div className="mt-4 max-w-7xl mx-auto">
