@@ -572,16 +572,24 @@ const History: React.FC = () => {
                                 <span className={`text-xs md:text-sm ${textClass} flex-1`}>
                                   {option}
                                 </span>
-                                {isUserAnswer && (
-                                  <span className={`text-xs font-medium ${
-                                    darkMode ? 'text-blue-400' : 'text-blue-600'
-                                  }`}>Your Answer</span>
-                                )}
-                                {isCorrectAnswer && (
-                                  <span className={`text-xs font-medium ${
-                                    darkMode ? 'text-green-400' : 'text-green-600'
-                                  }`}>Correct</span>
-                                )}
+                                <div className="flex items-center space-x-2">
+                                  {isUserAnswer && (
+                                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                      isCorrectAnswer
+                                        ? darkMode ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700'
+                                        : darkMode ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'
+                                    }`}>
+                                      Your Choice
+                                    </span>
+                                  )}
+                                  {isCorrectAnswer && (
+                                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                      darkMode ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700'
+                                    }`}>
+                                      Correct Answer
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
@@ -590,7 +598,13 @@ const History: React.FC = () => {
                         <div className={`mt-3 flex items-center justify-between text-xs ${
                           darkMode ? 'text-gray-400' : 'text-gray-600'
                         }`}>
-                          <span>Marks: {question.marks}</span>
+                          <span>
+                            {question.userAnswer === 'Not answered' ? (
+                              <span className={darkMode ? 'text-yellow-400' : 'text-yellow-600'}>Not Answered</span>
+                            ) : (
+                              <span>Your Answer: <strong>{question.userAnswer}</strong></span>
+                            )}
+                          </span>
                           <span>
                             {question.isCorrect ? 
                               `Earned: ${question.marks}` : 

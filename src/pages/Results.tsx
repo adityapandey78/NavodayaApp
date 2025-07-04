@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Trophy, Target, Clock, Home, RotateCcw, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Trophy, Target, Clock, Home, RotateCcw, Wifi, WifiOff, AlertCircle, Eye, X, Check } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
 import { useToast } from '../contexts/ToastContext';
 import { testService } from '../lib/supabase';
@@ -15,6 +15,8 @@ const Results: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [hasProcessed, setHasProcessed] = useState(false);
+  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
+  const [allQuestions, setAllQuestions] = useState<any[]>([]);
 
   useEffect(() => {
     const loadTestAndCalculateResults = async () => {
@@ -69,6 +71,8 @@ const Results: React.FC = () => {
         const allQuestions = foundTest.sections.flatMap((section: any) => 
           section.questions.map((q: any) => ({ ...q, sectionName: section.name }))
         );
+        
+        setAllQuestions(allQuestions);
 
         const totalScore = userAnswers.reduce((sum, answer) => sum + answer.marks, 0);
         const totalMarks = foundTest.totalMarks;
@@ -169,6 +173,18 @@ const Results: React.FC = () => {
     return 'Need More Practice! 📚';
   };
 
+  // Get detailed question analysis
+  const getQuestionAnalysis = () => {
+    return allQuestions.map(question => {
+      const userAnswer = userAnswers.find(a => a.questionId === question.id);
+      return {
+        ...question,
+        userAnswer: userAnswer?.selectedAnswer || 'Not answered',
+        isCorrect: userAnswer?.isCorrect || false,
+        marksEarned: userAnswer?.marks || 0
+      };
+    });
+  };
   if (!results || !test) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -273,6 +289,150 @@ const Results: React.FC = () => {
           </div>
         </div>
 
+        {/* Detailed Analysis Button */}
+        <div className="text-center">
+          <button
+            onClick={() => setShowDetailedAnalysis(true)}
+            className="flex items-center justify-center space-x-3 mx-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-3 md:py-4 px-6 md:px-8 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg text-sm md:text-lg"
+          >
+            <Eye size={20} />
+            <span>View Detailed Analysis</span>
+          </button>
+        </div>
+
+        {/* Detailed Analysis Modal */}
+        {showDetailedAnalysis && (
+          <div className={`fixed inset-0 flex items-center justify-center p-4 z-50 ${
+            darkMode ? 'bg-black/80' : 'bg-gray-900/80'
+          }`}>
+            <div className={`rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border ${
+              darkMode 
+                ? 'glass-dark border-white/20' 
+                : 'bg-white border-gray-200 shadow-2xl'
+            }`}>
+              <div className={`sticky top-0 backdrop-blur-lg p-4 md:p-6 border-b ${
+                darkMode 
+                  ? 'bg-black/80 border-white/10' 
+                  : 'bg-white/90 border-gray-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className={`text-lg md:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Detailed Question Analysis
+                    </h2>
+                    <p className={`text-sm md:text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Review your answers and see correct solutions
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowDetailedAnalysis(false)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <X size={20} className={darkMode ? 'text-white' : 'text-gray-600'} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 md:p-6 space-y-6">
+                {test.sections.map((section: any, sectionIndex: number) => (
+                  <div key={sectionIndex} className="space-y-4">
+                    <h3 className={`text-base md:text-lg font-bold pb-2 border-b ${
+                      darkMode 
+                        ? 'text-white border-white/10' 
+                        : 'text-gray-900 border-gray-200'
+                    }`}>
+                      {section.name}
+                    </h3>
+                    
+                    {section.questions.map((question: any, questionIndex: number) => {
+                      const userAnswer = userAnswers.find(a => a.questionId === question.id);
+                      const isCorrect = userAnswer?.isCorrect || false;
+                      const selectedAnswer = userAnswer?.selectedAnswer || 'Not answered';
+                      
+                      return (
+                        <div key={question.id} className={`rounded-xl p-4 border ${
+                          darkMode 
+                            ? 'glass-dark border-white/10' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <div className="flex items-start space-x-3 mb-4">
+                            <span className={`text-xs md:text-sm font-bold mt-1 ${
+                              darkMode ? 'text-purple-400' : 'text-purple-600'
+                            }`}>
+                              Q{questionIndex + 1}.
+                            </span>
+                            <p className={`text-sm md:text-base flex-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {question.question}
+                            </p>
+                            <div className={`p-1 rounded-full ${
+                              isCorrect ? 'bg-green-500' : selectedAnswer === 'Not answered' ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}>
+                              {isCorrect ? (
+                                <Check size={12} className="text-white" />
+                              ) : selectedAnswer === 'Not answered' ? (
+                                <AlertCircle size={12} className="text-white" />
+                              ) : (
+                                <X size={12} className="text-white" />
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 mb-4">
+                            {question.options.map((option: string, optionIndex: number) => {
+                              const isUserAnswer = option === selectedAnswer;
+                              const isCorrectAnswer = option === question.correctAnswer;
+                              
+                              let bgClass = darkMode ? 'bg-white/5' : 'bg-gray-100';
+                              let textClass = darkMode ? 'text-gray-300' : 'text-gray-700';
+                              let borderClass = darkMode ? 'border-white/10' : 'border-gray-200';
+                              
+                              if (isCorrectAnswer) {
+                                bgClass = darkMode ? 'bg-green-500/20' : 'bg-green-100';
+                                textClass = darkMode ? 'text-green-300' : 'text-green-700';
+                                borderClass = darkMode ? 'border-green-500/30' : 'border-green-300';
+                              } else if (isUserAnswer && !isCorrectAnswer) {
+                                bgClass = darkMode ? 'bg-red-500/20' : 'bg-red-100';
+                                textClass = darkMode ? 'text-red-300' : 'text-red-700';
+                                borderClass = darkMode ? 'border-red-500/30' : 'border-red-300';
+                              }
+
+                              return (
+                                <div
+                                  key={optionIndex}
+                                  className={`p-3 rounded-lg border ${bgClass} ${borderClass} flex items-center space-x-3`}
+                                >
+                                  <span className={`text-xs md:text-sm font-bold ${
+                                    darkMode ? 'text-purple-400' : 'text-purple-600'
+                                  }`}>
+                                    {String.fromCharCode(65 + optionIndex)}.
+                                  </span>
+                                  <span className={`text-xs md:text-sm ${textClass} flex-1`}>
+                                    {option}
+                                  </span>
+                                  <div className="flex items-center space-x-2">
+                                    {isUserAnswer && (
+                                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                        isCorrectAnswer
+                                          ? darkMode ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700'
+                                          : darkMode ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'
+                                      }`}>
+                                        Your Choice
+                                      </span>
+                                    )}
+                                    {isCorrectAnswer && (
+                                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                        darkMode ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700'
+                                      }`}>
+                                        Correct Answer
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
           <button
@@ -295,4 +455,49 @@ const Results: React.FC = () => {
   );
 };
 
+                          <div className={`flex items-center justify-between text-xs ${
+                            darkMode ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            <div className="flex items-center space-x-4">
+                              <span>
+                                {selectedAnswer === 'Not answered' ? (
+                                  <span className={darkMode ? 'text-yellow-400' : 'text-yellow-600'}>
+                                    ⚠️ Not Answered
+                                  </span>
+                                ) : (
+                                  <span>
+                                    Your Answer: <strong className={
+                                      isCorrect 
+                                        ? darkMode ? 'text-green-400' : 'text-green-600'
+                                        : darkMode ? 'text-red-400' : 'text-red-600'
+                                    }>{selectedAnswer}</strong>
+                                  </span>
+                                )}
+                              </span>
+                              <span>
+                                Correct Answer: <strong className={darkMode ? 'text-green-400' : 'text-green-600'}>
+                                  {question.correctAnswer}
+                                </strong>
+                              </span>
+                            </div>
+                            <span>
+                              {isCorrect ? 
+                                <span className={darkMode ? 'text-green-400' : 'text-green-600'}>
+                                  ✅ Earned: {question.marks} marks
+                                </span> : 
+                                <span className={darkMode ? 'text-red-400' : 'text-red-600'}>
+                                  ❌ Earned: 0 marks
+                                </span>
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 export default Results;
