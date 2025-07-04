@@ -399,7 +399,7 @@ const History: React.FC = () => {
                 Recent Tests
               </h2>
               <div className="space-y-3">
-                {testAttempts.slice(-5).reverse().map((attempt) => (
+                {testAttempts.slice(0, 5).map((attempt) => (
                   <div key={attempt.id} className={`flex items-center justify-between p-3 md:p-4 rounded-lg border ${
                     darkMode 
                       ? 'glass-dark border-white/5' 

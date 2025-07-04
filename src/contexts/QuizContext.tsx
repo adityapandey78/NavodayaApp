@@ -54,7 +54,11 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const supabaseAttempts = await attemptService.getUserAttempts(user.id);
-      setTestAttempts(supabaseAttempts);
+      // Sort attempts by date (most recent first)
+      const sortedAttempts = supabaseAttempts.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      setTestAttempts(sortedAttempts);
       showInfo('Test history loaded successfully');
     } catch (error: any) {
       console.error('Error loading user attempts:', error);
@@ -180,7 +184,11 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
               sectionWiseScore: savedAttempt.section_wise_score
             };
 
-            setTestAttempts(prev => [formattedAttempt, ...prev]);
+            // Add to beginning and sort by date
+            setTestAttempts(prev => {
+              const updated = [formattedAttempt, ...prev];
+              return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            });
             showSuccess('Test results submitted successfully!');
           }
         } catch (error: any) {
@@ -212,11 +220,17 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           
           // Add to local state for immediate display even if submission failed
-          setTestAttempts(prev => [attempt, ...prev]);
+          setTestAttempts(prev => {
+            const updated = [attempt, ...prev];
+            return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          });
         }
       } else {
         // Guest user - save locally only
-        setTestAttempts(prev => [attempt, ...prev]);
+        setTestAttempts(prev => {
+          const updated = [attempt, ...prev];
+          return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        });
         showWarning('📱 Guest Mode\n\nResults saved locally only.\n\nSign in to submit results online and sync across devices.');
       }
     } finally {

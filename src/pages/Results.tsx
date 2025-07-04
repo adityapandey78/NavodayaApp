@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Trophy, Target, Clock, Home, RotateCcw, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
 import { useToast } from '../contexts/ToastContext';
-import { networkService } from '../lib/supabase';
+import { testService } from '../lib/supabase';
 
 const Results: React.FC = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string }>();
@@ -14,28 +14,38 @@ const Results: React.FC = () => {
   const [test, setTest] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [hasProcessed, setHasProcessed] = useState(false);
 
   useEffect(() => {
     const loadTestAndCalculateResults = async () => {
-      // Prevent multiple executions while processing
-      if (isProcessing) {
+      // Prevent multiple executions
+      if (isProcessing || hasProcessed || !userAnswers || userAnswers.length === 0) {
         return;
       }
       
       setIsProcessing(true);
       
       try {
-        // Get test data from cache first
+        // Get test data
         let foundTest = null;
         
         try {
-          const cachedTests = JSON.parse(localStorage.getItem('cached_tests') || '[]');
-          foundTest = cachedTests.find((t: any) => t.id === testId && t.testType === testType);
+          foundTest = await testService.getTestById(testId!);
         } catch (error) {
-          console.error('Error loading cached tests:', error);
+          console.error('Error loading test:', error);
         }
         
-        // Fallback to default tests if not in cache
+        // Fallback to cached tests
+        if (!foundTest) {
+          try {
+            const cachedTests = JSON.parse(localStorage.getItem('cached_tests') || '[]');
+            foundTest = cachedTests.find((t: any) => t.id === testId && t.testType === testType);
+          } catch (error) {
+            console.error('Error loading cached tests:', error);
+          }
+        }
+        
+        // Final fallback to default tests
         if (!foundTest) {
           try {
             const module = await import('../data/testData');
@@ -55,7 +65,7 @@ const Results: React.FC = () => {
 
         setTest(foundTest);
 
-        // Calculate results
+        // Calculate results using current userAnswers
         const allQuestions = foundTest.sections.flatMap((section: any) => 
           section.questions.map((q: any) => ({ ...q, sectionName: section.name }))
         );
@@ -94,9 +104,8 @@ const Results: React.FC = () => {
 
         setResults(resultData);
 
-        // Save to history
-        if (currentAttemptId && userAnswers.length > 0 && !isProcessing) {
-          
+        // Save to history only once
+        if (currentAttemptId && userAnswers.length > 0) {
           const attempt = {
             id: currentAttemptId,
             testId: testId!,
@@ -114,14 +123,13 @@ const Results: React.FC = () => {
           // Add attempt with proper error handling
           try {
             await addTestAttempt(attempt);
-            // Clear answers after successful submission to prevent re-submission
-            clearUserAnswers();
+            setHasProcessed(true);
+            
+            if (isOnline) {
+              showInfo('Results saved successfully!');
+            }
           } catch (error) {
             console.error('Failed to save attempt:', error);
-          }
-          
-          if (isOnline) {
-            showInfo('Results saved successfully!');
           }
         }
       } catch (error) {
@@ -145,7 +153,7 @@ const Results: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [testType, testId, userAnswers, navigate, addTestAttempt, currentAttemptId, clearUserAnswers, showInfo, isProcessing, isOnline]);
+  }, []); // Empty dependency array to run only once
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-400';

@@ -123,16 +123,22 @@ export default function Admin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isOnline) {
-      showError('Internet connection required for admin login');
+    // Always check connection status first
+    if (!navigator.onLine) {
+      showError('❌ No Internet Connection\n\nAdmin panel requires an active internet connection to:\n• Access the database\n• Manage tests\n• Upload content\n\nPlease connect to the internet and try again.');
       return;
     }
     
-    // Check connection before allowing login
-    await checkConnectionStatus();
-    
-    if (connectionStatus !== 'connected') {
-      showError('Cannot connect to database. Please check your internet connection.');
+    // Test database connection
+    try {
+      await checkConnectionStatus();
+      
+      if (connectionStatus !== 'connected') {
+        showError('❌ Database Connection Failed\n\nCannot connect to the database server.\n\nPlease:\n1. Check your internet connection\n2. Wait a moment and try again\n3. Contact support if the problem persists');
+        return;
+      }
+    } catch (error) {
+      showError('❌ Connection Error\n\nFailed to verify database connection.\n\nPlease check your internet and try again.');
       return;
     }
     
@@ -392,10 +398,10 @@ export default function Admin() {
             <div className="flex space-x-2">
               <button
                 type="submit"
-                disabled={connectionStatus !== 'connected'}
+                disabled={!navigator.onLine}
                 className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-500 disabled:to-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-all duration-300"
               >
-                {connectionStatus === 'connected' ? 'Login' : 'Connection Required'}
+                {navigator.onLine ? 'Login' : 'Internet Required'}
               </button>
               <button
                 type="button"

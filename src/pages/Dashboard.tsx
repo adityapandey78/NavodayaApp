@@ -49,7 +49,10 @@ const Dashboard: React.FC = () => {
     ? Math.round(testAttempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / totalAttempts)
     : 0;
 
-  const recentAttempts = testAttempts.slice(-3).reverse();
+  // Sort by date (most recent first) and take the last 3
+  const recentAttempts = testAttempts
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 3);
 
   const handleStartTest = () => {
     if (!isOnline) {
