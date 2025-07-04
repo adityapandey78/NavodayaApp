@@ -39,209 +39,369 @@
   background-color: #ffffff;
 }
 
-/* AGGRESSIVE MOBILE FONT SIZE INCREASES - UP TO 375PX */
-@media (max-width: 375px) {
-  /* Increase base font size significantly */
+/* OPTIMIZED MOBILE FONT SIZES FOR SMALL SCREENS */
+/* Very small screens (320px - 344px) */
+@media (max-width: 344px) {
+  /* Base font size for very small screens */
   html, body {
-    font-size: 20px !important;
+    font-size: 14px !important;
   }
   
-  /* Override ALL text sizes to be much larger */
+  /* Compact text sizes for small screens */
   .text-xs {
-    font-size: 1.125rem !important; /* 18px */
-    line-height: 1.75rem !important;
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1rem !important;
   }
   
   .text-sm {
-    font-size: 1.25rem !important; /* 20px */
-    line-height: 1.875rem !important;
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
   }
   
   .text-base {
-    font-size: 1.375rem !important; /* 22px */
-    line-height: 2rem !important;
-  }
-  
-  .text-lg {
-    font-size: 1.5rem !important; /* 24px */
-    line-height: 2.25rem !important;
-  }
-  
-  .text-xl {
-    font-size: 1.75rem !important; /* 28px */
-    line-height: 2.5rem !important;
-  }
-  
-  .text-2xl {
-    font-size: 2rem !important; /* 32px */
-    line-height: 2.75rem !important;
-  }
-  
-  .text-3xl {
-    font-size: 2.25rem !important; /* 36px */
-    line-height: 3rem !important;
-  }
-  
-  .text-4xl {
-    font-size: 2.5rem !important; /* 40px */
-    line-height: 3.25rem !important;
-  }
-  
-  .text-5xl {
-    font-size: 2.75rem !important; /* 44px */
-    line-height: 3.5rem !important;
-  }
-  
-  /* Specific component font sizes */
-  .quiz-question {
-    font-size: 1.5rem !important; /* 24px */
-    line-height: 2.25rem !important;
-  }
-  
-  .quiz-option {
-    font-size: 1.25rem !important; /* 20px */
-    line-height: 1.875rem !important;
-  }
-  
-  .dashboard-title {
-    font-size: 2rem !important; /* 32px */
-    line-height: 2.75rem !important;
-  }
-  
-  .dashboard-subtitle {
-    font-size: 1.375rem !important; /* 22px */
-    line-height: 2rem !important;
-  }
-  
-  .dashboard-stat {
-    font-size: 1.75rem !important; /* 28px */
-    line-height: 2.5rem !important;
-  }
-  
-  .dashboard-label {
-    font-size: 1.125rem !important; /* 18px */
-    line-height: 1.75rem !important;
-  }
-  
-  .btn-text {
-    font-size: 1.125rem !important; /* 18px */
-    line-height: 1.75rem !important;
-  }
-  
-  .card-title {
-    font-size: 1.375rem !important; /* 22px */
-    line-height: 2rem !important;
-  }
-  
-  .card-description {
-    font-size: 1.125rem !important; /* 18px */
-    line-height: 1.75rem !important;
-  }
-  
-  .nav-text {
     font-size: 1rem !important; /* 16px */
     line-height: 1.5rem !important;
   }
   
-  .modal-title {
+  .text-lg {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.75rem !important;
+  }
+  
+  .text-xl {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.875rem !important;
+  }
+  
+  .text-2xl {
     font-size: 1.5rem !important; /* 24px */
+    line-height: 2rem !important;
+  }
+  
+  .text-3xl {
+    font-size: 1.75rem !important; /* 28px */
     line-height: 2.25rem !important;
   }
   
-  .modal-text {
-    font-size: 1.125rem !important; /* 18px */
-    line-height: 1.75rem !important;
-  }
-  
-  /* Form elements */
-  input, textarea, select, button {
-    font-size: 1.25rem !important; /* 20px */
-    line-height: 1.875rem !important;
-    min-height: 48px !important; /* Larger touch targets */
-  }
-  
-  /* Navigation and buttons */
-  button {
-    font-size: 1.125rem !important; /* 18px */
-    line-height: 1.75rem !important;
-    min-height: 48px !important;
-  }
-  
-  /* Ensure all text is readable */
-  p, span, div, label {
-    font-size: 1.125rem !important; /* 18px */
-    line-height: 1.75rem !important;
-  }
-  
-  /* Headers */
-  h1 {
-    font-size: 2.25rem !important; /* 36px */
-    line-height: 3rem !important;
-  }
-  
-  h2 {
+  .text-4xl {
     font-size: 2rem !important; /* 32px */
-    line-height: 2.75rem !important;
-  }
-  
-  h3 {
-    font-size: 1.75rem !important; /* 28px */
     line-height: 2.5rem !important;
   }
   
-  h4 {
-    font-size: 1.5rem !important; /* 24px */
-    line-height: 2.25rem !important;
+  .text-5xl {
+    font-size: 2.25rem !important; /* 36px */
+    line-height: 2.75rem !important;
+  }
+}
+
+/* Medium small screens (345px - 375px) */
+@media (min-width: 345px) and (max-width: 375px) {
+  /* Slightly larger base font size */
+  html, body {
+    font-size: 16px !important;
   }
   
-  h5 {
+  /* Moderate text sizes */
+  .text-xs {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
+  }
+  
+  .text-sm {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5rem !important;
+  }
+  
+  .text-base {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.75rem !important;
+  }
+  
+  .text-lg {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.875rem !important;
+  }
+  
+  .text-xl {
     font-size: 1.375rem !important; /* 22px */
     line-height: 2rem !important;
   }
   
-  h6 {
-    font-size: 1.25rem !important; /* 20px */
-    line-height: 1.875rem !important;
+  .text-2xl {
+    font-size: 1.625rem !important; /* 26px */
+    line-height: 2.25rem !important;
   }
   
-  /* Special overrides for very small text */
-  .text-xs, .text-sm {
-    font-size: 1.125rem !important; /* Never smaller than 18px */
-    line-height: 1.75rem !important;
+  .text-3xl {
+    font-size: 1.875rem !important; /* 30px */
+    line-height: 2.5rem !important;
   }
   
-  /* Ensure minimum spacing for readability */
+  .text-4xl {
+    font-size: 2.125rem !important; /* 34px */
+    line-height: 2.75rem !important;
+  }
+  
+  .text-5xl {
+    font-size: 2.375rem !important; /* 38px */
+    line-height: 3rem !important;
+  }
+}
+
+/* Specific optimizations for very small screens (320px - 344px) */
+@media (max-width: 344px) {
+  /* Component-specific overrides for very small screens */
+  .quiz-question {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
+  }
+  
+  .quiz-option {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1rem !important;
+  }
+  
+  .dashboard-title {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5rem !important;
+  }
+  
+  .dashboard-subtitle {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
+  }
+  
+  .dashboard-stat {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5rem !important;
+  }
+  
+  .btn-text {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1rem !important;
+  }
+  
+  .card-title {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
+  }
+  
+  .nav-text {
+    font-size: 0.625rem !important; /* 10px */
+    line-height: 0.875rem !important;
+  }
+  
+  /* Extra compact buttons for small screens */
+  button {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1rem !important;
+    min-height: 40px !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+  
+  /* Headers for small screens */
+  h1 {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.625rem !important;
+  }
+  
+  h2 {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5rem !important;
+  }
+  
+  h3 {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
+  }
+  
+  /* Ultra compact spacing for very small screens */
   .space-y-1 > * + * {
-    margin-top: 0.5rem !important;
+    margin-top: 0.125rem !important;
   }
   
   .space-y-2 > * + * {
-    margin-top: 0.75rem !important;
+    margin-top: 0.25rem !important;
   }
   
   .space-y-3 > * + * {
-    margin-top: 1rem !important;
+    margin-top: 0.5rem !important;
   }
   
   .space-y-4 > * + * {
-    margin-top: 1.25rem !important;
+    margin-top: 0.75rem !important;
   }
   
-  /* Better padding for mobile */
-  .p-1 { padding: 0.5rem !important; }
-  .p-2 { padding: 0.75rem !important; }
-  .p-3 { padding: 1rem !important; }
-  .p-4 { padding: 1.25rem !important; }
+  /* Ultra compact padding */
+  .p-1 { padding: 0.125rem !important; }
+  .p-2 { padding: 0.25rem !important; }
+  .p-3 { padding: 0.5rem !important; }
+  .p-4 { padding: 0.75rem !important; }
   
-  .px-1 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-  .px-2 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-  .px-3 { padding-left: 1rem !important; padding-right: 1rem !important; }
-  .px-4 { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+  .px-1 { padding-left: 0.125rem !important; padding-right: 0.125rem !important; }
+  .px-2 { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+  .px-3 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+  .px-4 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
   
-  .py-1 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-  .py-2 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
-  .py-3 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-  .py-4 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+  .py-1 { padding-top: 0.125rem !important; padding-bottom: 0.125rem !important; }
+  .py-2 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+  .py-3 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+  .py-4 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+}
+
+/* Component-specific optimizations for all mobile screens */
+@media (max-width: 375px) {
+  /* Specific component font sizes - optimized for readability */
+  .quiz-question {
+    font-size: 1rem !important; /* 16px for small, 18px for medium */
+    line-height: 1.5rem !important;
+  }
+  
+  .quiz-option {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  .dashboard-title {
+    font-size: 1.25rem !important; /* 20px for small, 22px for medium */
+    line-height: 1.75rem !important;
+  }
+  
+  .dashboard-subtitle {
+    font-size: 1rem !important; /* 16px for small, 18px for medium */
+    line-height: 1.5rem !important;
+  }
+  
+  .dashboard-stat {
+    font-size: 1.125rem !important; /* 18px for small, 20px for medium */
+    line-height: 1.625rem !important;
+  }
+  
+  .dashboard-label {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  .btn-text {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  .card-title {
+    font-size: 1rem !important; /* 16px for small, 18px for medium */
+    line-height: 1.5rem !important;
+  }
+  
+  .card-description {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  .nav-text {
+    font-size: 0.75rem !important; /* 12px for small, 14px for medium */
+    line-height: 1rem !important;
+  }
+  
+  .modal-title {
+    font-size: 1.125rem !important; /* 18px for small, 20px for medium */
+    line-height: 1.625rem !important;
+  }
+  
+  .modal-text {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  /* Form elements - optimized for touch */
+  input, textarea, select, button {
+    font-size: 1rem !important; /* 16px - prevent zoom on iOS */
+    line-height: 1.5rem !important;
+    min-height: 44px !important; /* Apple's recommended minimum */
+  }
+  
+  /* Navigation and buttons */
+  button {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+    min-height: 44px !important;
+    padding: 0.5rem 0.75rem !important; /* Reduced padding */
+  }
+  
+  /* Ensure all text is readable but compact */
+  p, span, div, label {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  /* Headers - more compact */
+  h1 {
+    font-size: 1.5rem !important; /* 24px for small, 26px for medium */
+    line-height: 2rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important; /* 20px for small, 22px for medium */
+    line-height: 1.75rem !important;
+  }
+  
+  h3 {
+    font-size: 1.125rem !important; /* 18px for small, 20px for medium */
+    line-height: 1.625rem !important;
+  }
+  
+  h4 {
+    font-size: 1rem !important; /* 16px for small, 18px for medium */
+    line-height: 1.5rem !important;
+  }
+  
+  h5 {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  h6 {
+    font-size: 0.875rem !important; /* 14px for small, 16px for medium */
+    line-height: 1.25rem !important;
+  }
+  
+  /* Override for very small text */
+  .text-xs, .text-sm {
+    font-size: 0.875rem !important; /* Never smaller than 14px */
+    line-height: 1.25rem !important;
+  }
+  
+  /* Ensure minimum spacing for readability - more compact */
+  .space-y-1 > * + * {
+    margin-top: 0.25rem !important;
+  }
+  
+  .space-y-2 > * + * {
+    margin-top: 0.5rem !important;
+  }
+  
+  .space-y-3 > * + * {
+    margin-top: 0.75rem !important;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  /* Compact padding for mobile - optimized for small screens */
+  .p-1 { padding: 0.25rem !important; }
+  .p-2 { padding: 0.5rem !important; }
+  .p-3 { padding: 0.75rem !important; }
+  .p-4 { padding: 1rem !important; }
+  
+  .px-1 { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+  .px-2 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+  .px-3 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  .px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+  
+  .py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+  .py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+  .py-3 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+  .py-4 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
 }
 
 /* Mobile optimizations for larger screens (up to 768px) */

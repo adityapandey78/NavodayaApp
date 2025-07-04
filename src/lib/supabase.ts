@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Get environment variables with fallbacks
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://doibiltyhcqvccsnggwl.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvaWJpbHR5aGNxdmNjc25nZ3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1NTYwMzMsImV4cCI6MjA2NzEzMjAzM30.INuR6Q_0AU5B0tjw51s25Jz7jC63GAL5CG0C84sRNDg';
 
 // Initialize Supabase client
-let supabase: any = null;
+let supabase: SupabaseClient | null = null;
 let isSupabaseAvailable = false;
 
 try {
@@ -93,7 +93,7 @@ const cacheService = {
       const oneHour = 60 * 60 * 1000;
       
       return (now - lastSyncTime) < oneHour;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
@@ -142,7 +142,7 @@ export const testService = {
   isAvailable: () => isSupabaseAvailable && supabase,
 
   // Check network and Supabase connection with better error handling
-  checkConnection: async (skipNetworkCheck: boolean = false): Promise<boolean> => {
+  checkConnection: async (): Promise<boolean> => {
     // For admin functions, we need both network and Supabase
     // if (!skipNetworkCheck && !networkService.isOnline()) {
     //   throw new Error('No internet connection detected. Please check your network settings.');
@@ -245,6 +245,10 @@ export const testService = {
 
   // Background refresh method
   async refreshTestsInBackground(): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized');
+    }
+
     try {
       const { data, error } = await supabase
         .from('tests')
@@ -471,7 +475,7 @@ export const attemptService = {
   getPendingAttempts: (): any[] => {
     try {
       return JSON.parse(localStorage.getItem('pending_attempts') || '[]');
-    } catch (error) {
+    } catch {
       return [];
     }
   },
@@ -556,6 +560,15 @@ export const attemptService = {
 
     if (error) {
       console.error('Supabase insert error:', error);
+      
+      // Handle duplicate attempt errors gracefully
+      if (error.message.includes('duplicate') || error.message.includes('unique') || 
+          error.message.includes('Duplicate test attempt')) {
+        console.log('Duplicate attempt detected at database level, ignoring');
+        // Return null to indicate duplicate was handled
+        return null;
+      }
+      
       throw new Error(`Failed to save attempt: ${error.message}`);
     }
 

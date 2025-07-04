@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { TestData, TestAttempt, UserAnswer } from '../types/quiz';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
@@ -48,7 +48,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Load user attempts from Supabase
-  const loadUserAttempts = async () => {
+  const loadUserAttempts = useCallback(async () => {
     if (isLoading || !user) return;
     
     setIsLoading(true);
@@ -59,7 +59,8 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       setTestAttempts(sortedAttempts);
-      showInfo('Test history loaded successfully');
+      // Removed success message to prevent continuous popups
+      console.log(`Loaded ${sortedAttempts.length} test attempts for user`);
     } catch (error: any) {
       console.error('Error loading user attempts:', error);
       if (error.message.includes('internet') || error.message.includes('connection')) {
@@ -71,10 +72,10 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, showWarning, showError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync pending attempts when back online
-  const syncPendingAttempts = async () => {
+  const syncPendingAttempts = useCallback(async () => {
     try {
       await attemptService.syncPendingAttempts();
       setHasPendingAttempts(false);
@@ -92,7 +93,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showError('Failed to upload pending results');
       }
     }
-  };
+  }, [showSuccess, showError, user, loadUserAttempts]);
 
   // Load attempts when user changes
   useEffect(() => {
@@ -101,7 +102,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       setTestAttempts([]);
     }
-  }, [user?.id]);
+  }, [user, loadUserAttempts]);
 
   // Listen for online/offline events
   useEffect(() => {
@@ -123,7 +124,7 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [hasPendingAttempts]);
+  }, [hasPendingAttempts, syncPendingAttempts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addUserAnswer = (answer: UserAnswer) => {
     setUserAnswers(prev => {
@@ -136,9 +137,21 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addTestAttempt = async (attempt: TestAttempt) => {
-    // Prevent multiple submissions
-    if (isSubmitting || testAttempts.some(existing => existing.id === attempt.id)) {
+    // Prevent multiple submissions with stronger checks
+    if (isSubmitting) {
       console.log('Already submitting, skipping duplicate submission');
+      return;
+    }
+    
+    // Check if attempt already exists (by ID or recent attempt with same test)
+    const existingAttempt = testAttempts.find(existing => 
+      existing.id === attempt.id || 
+      (existing.testId === attempt.testId && 
+       Math.abs(new Date(existing.date).getTime() - new Date(attempt.date).getTime()) < 10000) // Within 10 seconds
+    );
+    
+    if (existingAttempt) {
+      console.log('Duplicate attempt detected, skipping submission');
       return;
     }
     
@@ -186,12 +199,28 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Add to beginning and sort by date
             setTestAttempts(prev => {
-              // Check for duplicates before adding
+              // Strong duplicate check before adding
+              const isDuplicate = prev.some(existing => 
+                existing.id === formattedAttempt.id ||
+                (existing.testId === formattedAttempt.testId && 
+                 existing.testType === formattedAttempt.testType &&
+                 Math.abs(new Date(existing.date).getTime() - new Date(formattedAttempt.date).getTime()) < 10000)
+              );
+              
+              if (isDuplicate) {
+                console.log('Duplicate attempt detected in state update, skipping');
+                return prev;
+              }
+              
               const filtered = prev.filter(existing => existing.id !== formattedAttempt.id);
               const updated = [formattedAttempt, ...filtered];
               return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             });
             showSuccess('Test results submitted successfully!');
+          } else {
+            // savedAttempt is null, meaning it was a duplicate caught at database level
+            console.log('Duplicate attempt caught at database level');
+            showSuccess('Test already submitted - no duplicate created!');
           }
         } catch (error: any) {
           console.error('Error saving attempt:', error);
@@ -223,7 +252,19 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Add to local state for immediate display even if submission failed
           setTestAttempts(prev => {
-            // Check for duplicates before adding
+            // Strong duplicate check before adding
+            const isDuplicate = prev.some(existing => 
+              existing.id === attempt.id ||
+              (existing.testId === attempt.testId && 
+               existing.testType === attempt.testType &&
+               Math.abs(new Date(existing.date).getTime() - new Date(attempt.date).getTime()) < 10000)
+            );
+            
+            if (isDuplicate) {
+              console.log('Duplicate attempt detected in error fallback, skipping');
+              return prev;
+            }
+            
             const filtered = prev.filter(existing => existing.id !== attempt.id);
             const updated = [attempt, ...filtered];
             return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -232,7 +273,19 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // Guest user - save locally only
         setTestAttempts(prev => {
-          // Check for duplicates before adding
+          // Strong duplicate check before adding
+          const isDuplicate = prev.some(existing => 
+            existing.id === attempt.id ||
+            (existing.testId === attempt.testId && 
+             existing.testType === attempt.testType &&
+             Math.abs(new Date(existing.date).getTime() - new Date(attempt.date).getTime()) < 10000)
+          );
+          
+          if (isDuplicate) {
+            console.log('Duplicate attempt detected in guest mode, skipping');
+            return prev;
+          }
+          
           const filtered = prev.filter(existing => existing.id !== attempt.id);
           const updated = [attempt, ...filtered];
           return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

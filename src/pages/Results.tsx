@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Trophy, Target, Clock, Home, RotateCcw, Wifi, WifiOff, AlertCircle, Eye, X, Check } from 'lucide-react';
+import { Trophy, Home, RotateCcw, Wifi, WifiOff, Eye, X, Check } from 'lucide-react';
 import { useQuiz } from '../contexts/QuizContext';
 import { useToast } from '../contexts/ToastContext';
 import { testService } from '../lib/supabase';
@@ -8,8 +8,8 @@ import { testService } from '../lib/supabase';
 const Results: React.FC = () => {
   const { testType, testId } = useParams<{ testType: string; testId: string }>();
   const navigate = useNavigate();
-  const { userAnswers, addTestAttempt, currentAttemptId, clearUserAnswers } = useQuiz();
-  const { showWarning, showInfo } = useToast();
+  const { userAnswers, addTestAttempt, currentAttemptId } = useQuiz();
+  const { showInfo } = useToast();
   const [results, setResults] = useState<any>(null);
   const [test, setTest] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -18,15 +18,18 @@ const Results: React.FC = () => {
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
   const [allQuestions, setAllQuestions] = useState<any[]>([]);
   const [attemptId] = useState(() => `${testId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [submissionAttempted, setSubmissionAttempted] = useState(false);
 
   useEffect(() => {
     const loadTestAndCalculateResults = async () => {
-      // Prevent multiple executions
-      if (isProcessing || hasProcessed || !userAnswers || userAnswers.length === 0 || !currentAttemptId) {
+      // Prevent multiple executions with stronger checks
+      if (isProcessing || hasProcessed || submissionAttempted || !userAnswers || userAnswers.length === 0 || !currentAttemptId) {
+        console.log('Skipping result processing:', { isProcessing, hasProcessed, submissionAttempted, userAnswersLength: userAnswers?.length, currentAttemptId });
         return;
       }
       
       setIsProcessing(true);
+      setSubmissionAttempted(true);
       
       try {
         // Get test data
@@ -158,7 +161,7 @@ const Results: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []); // Empty dependency array to run only once
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-400';

@@ -1,20 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Shield, Users, Clock, AlertCircle, Wifi, WifiOff, Star, Zap } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { testService, networkService } from '../lib/supabase';
+import { testService } from '../lib/supabase';
 
 const QuizSelection: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { showError, showWarning, showInfo } = useToast();
+  const { showError } = useToast();
   const [availableTests, setAvailableTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  const loadTests = async () => {
+  const loadTests = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -42,7 +40,7 @@ const QuizSelection: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showError]);
 
   useEffect(() => {
     loadTests();
@@ -64,7 +62,7 @@ const QuizSelection: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [loadTests]);
 
   const navodayaTests = availableTests.filter(test => test.testType === 'navodaya');
   const sainikTests = availableTests.filter(test => test.testType === 'sainik');
